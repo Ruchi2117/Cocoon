@@ -37,7 +37,7 @@ The [support desk and connected rooms](docs/SUPPORT-DESK.md) add audience-based 
 
 Original SVG city/character artwork, motion chapters, sunset/night mode, pause controls, reduced-motion support and an arrival stamp follow the reviewed red/ivory/ink reference direction. See [motion notes](docs/MOTION-DIRECTION.md) and [development handoff](docs/DEVELOPMENT-HANDOFF.md).
 
-Local changes have not been synced to Lovable. No Git remote is configured. The SheBuild credit grant remains unverified; no credit-consuming Lovable prompts were used for these local changes.
+Live demo: [coco-safe-routes.lovable.app](https://coco-safe-routes.lovable.app). Source: [Ruchi2117/Cocoon](https://github.com/Ruchi2117/Cocoon). The local snapshot was imported into Lovable and published on 17 October 2026. Local builds use Node; the hosted copy uses Cloudflare. This was a source snapshot import, not a verified ongoing GitHub-to-Lovable sync. The SheBuild credit grant remains unverified. See [deployment record](docs/DEPLOYMENT.md).
 
 ## Built with
 
