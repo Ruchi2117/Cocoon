@@ -29,3 +29,8 @@ Validation: 104 tests pass, TypeScript and production build pass; lint has no er
 Welcome now uses one fixed viewport-wide flashlight landscape behind both entry and referral sections. Pointer tracking listens across the page, decorative world symbols float within the illustration, and still/reduced-motion modes remain available. The scene persists on scroll; form controls remain above it. Desktop and 390px mobile layouts checked without horizontal overflow.
 
 The optional welcome route now bypasses the application shell entirely: no desktop/mobile navigation, role switcher or app banner. It retains a skip-to-entry link, demo disclosure and direct skip/enter links. A standalone signature and full-window scene form the entrance.
+
+
+## Entry launch flow (17 October 2026)
+
+The main address now renders the full-screen welcome experience for a fresh browser tab. It has the same flashlight scene and no app navigation. Enter Cocoon and Skip this and explore both set a separate, session-scoped entry marker and reveal the world immediately. Returning home or refreshing the same tab keeps the world available. /welcome can still replay the introduction, and direct page URLs remain direct. The introduction never requires authentication or demo profile creation. Session storage failure falls back to in-memory state for the current page.

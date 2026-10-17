@@ -24,6 +24,7 @@ import { EmergencyAccess } from "./EmergencyAccess";
 import { RoomAtmosphere } from "./RoomAtmosphere";
 import { WorldDoorway } from "./WorldDoorway";
 import { enterWorld } from "@/lib/cocoon/world-navigation";
+import { useEntryComplete } from "@/lib/cocoon/entry";
 import { Button } from "@/components/ui/button";
 import { useProductionAuth } from "@/lib/production/auth";
 import { WorldMenu } from "./WorldMenu";
@@ -72,6 +73,7 @@ const ROLE_LABEL: Record<Role, string> = {
 };
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const entryComplete = useEntryComplete();
   const navigate = useNavigate();
   const account = useProductionAuth();
   const navigating = useRouterState({ select: (r) => r.status === "pending" });
@@ -91,7 +93,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const alerts = (r: Role) =>
     incidentsVisibleTo(s, r).filter((i) => !["resolved", "cancelled"].includes(i.status)).length;
 
-  if (loc.pathname === "/welcome") {
+  if (loc.pathname === "/welcome" || (loc.pathname === "/" && !entryComplete)) {
     return (
       <div className="entry-only-shell">
         <a href="#main-content" className="skip-link">
@@ -289,4 +291,3 @@ export function RoleGate({ role, children }: { role: Role; children: ReactNode }
     );
   return <>{children}</>;
 }
-

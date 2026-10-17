@@ -10,6 +10,8 @@ import { SosButton } from "@/components/cocoon/SosPanel";
 import { RoleGate } from "@/components/cocoon/AppShell";
 import { CocoonWorld } from "@/components/cocoon/CocoonWorld";
 import { CourageInvitation } from "@/components/cocoon/CourageStudio";
+import { useEntryComplete } from "@/lib/cocoon/entry";
+import { WelcomeExperience } from "./welcome";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -33,6 +35,8 @@ export const Route = createFileRoute("/")({
 });
 
 function Home() {
+  const entryComplete = useEntryComplete();
+  if (!entryComplete) return <WelcomeExperience />;
   return (
     <RoleGate role="traveller">
       <div className="world-home">
@@ -181,4 +185,3 @@ function HomeTools() {
     </div>
   );
 }
-

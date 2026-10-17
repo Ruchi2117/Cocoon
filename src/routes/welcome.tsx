@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { FlashlightThreshold } from "@/components/cocoon/FlashlightThreshold";
+import { completeEntry } from "@/lib/cocoon/entry";
 import { ArrowUpRight, Sparkles, Users, Compass } from "lucide-react";
 import {
   REFERRAL_KEY,
@@ -21,6 +22,9 @@ export const Route = createFileRoute("/welcome")({
 });
 function Welcome() {
   const { invite } = Route.useSearch();
+  return <WelcomeExperience invite={invite} />;
+}
+export function WelcomeExperience({ invite }: { invite?: string | undefined }) {
   const [profile, setProfile] = useState(false),
     [name, setName] = useState(""),
     [entered, setEntered] = useState(false),
@@ -112,17 +116,17 @@ function Welcome() {
           ) : (
             <div className="welcome-arrival" role="status">
               <p>Make yourself at home{name.trim() ? `, ${name.trim()}` : ""}.</p>
-              <Link to="/" viewTransition>
+              <Link to="/" viewTransition onClick={completeEntry}>
                 Enter Cocoon <ArrowUpRight size={22} />
               </Link>
             </div>
           )}
-          <Link className="welcome-skip" to="/">
+          <Link className="welcome-skip" to="/" onClick={completeEntry}>
             Skip this and explore ↗
           </Link>
           <p className="welcome-demo-note">
-            Sign-in design preview. Authentication is not connected, and this page is never required
-            to use the demo.
+            Explore without signing in. The optional profile here is a demo; private guardian alerts
+            use a separate account.
           </p>
         </div>
       </section>
