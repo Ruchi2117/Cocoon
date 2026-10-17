@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { connectLiveVoice, type LiveVoiceOptions } from "./live-voice";
+vi.mock("@/lib/production/auth", () => ({
+  bearerHeaders: async () => ({ Authorization: "Bearer mock-token" }),
+}));
 const stop = vi.fn(),
   close = vi.fn(),
   pause = vi.fn();
@@ -17,7 +20,14 @@ let permission: ReturnType<typeof vi.fn>;
 let track: { stop: typeof stop; enabled: boolean };
 const context = { name: "Arjun", style: "calm", country: null };
 function options(signal = new AbortController().signal): LiveVoiceOptions {
-  return { signal, context, onPhase: vi.fn(), onCaption: vi.fn(), onError: vi.fn() };
+  return {
+    signal,
+    contextConsent: false,
+    context,
+    onPhase: vi.fn(),
+    onCaption: vi.fn(),
+    onError: vi.fn(),
+  };
 }
 beforeEach(() => {
   vi.clearAllMocks();
@@ -174,3 +184,4 @@ describe("live voice event handling", () => {
     }
   });
 });
+

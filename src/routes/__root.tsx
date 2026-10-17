@@ -14,6 +14,7 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { AppShell } from "@/components/cocoon/AppShell";
 import { Toaster } from "@/components/ui/sonner";
+import { AuthProvider } from "@/lib/production/auth";
 import { MotionConfig } from "motion/react";
 
 function NotFoundComponent() {
@@ -129,13 +130,16 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <MotionConfig reducedMotion="user">
-        {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <AppShell>
-          <Outlet />
-        </AppShell>
-        <Toaster position="top-center" />
-      </MotionConfig>
+      <AuthProvider>
+        <MotionConfig reducedMotion="user">
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <AppShell>
+            <Outlet />
+          </AppShell>
+          <Toaster position="top-center" />
+        </MotionConfig>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
+

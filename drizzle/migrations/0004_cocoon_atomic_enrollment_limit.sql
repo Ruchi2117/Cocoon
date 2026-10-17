@@ -1,0 +1,3 @@
+CREATE FUNCTION public.limit_guardian_enrollments() RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$ BEGIN PERFORM pg_advisory_xact_lock(hashtextextended(NEW.traveller_id::text,3)); IF (SELECT count(*) FROM public.guardian_enrollments WHERE traveller_id=NEW.traveller_id)>=10 THEN RAISE EXCEPTION 'Maximum ten enrollments'; END IF; RETURN NEW; END $$;
+REVOKE ALL ON FUNCTION public.limit_guardian_enrollments() FROM PUBLIC,anon,authenticated;
+CREATE TRIGGER limit_guardian_enrollments BEFORE INSERT ON public.guardian_enrollments FOR EACH ROW EXECUTE FUNCTION public.limit_guardian_enrollments();

@@ -25,9 +25,25 @@ export const Route = createFileRoute("/api/public/whatsapp/twilio-status")({
         if (!ok) return new Response("Invalid signature", { status: 401 });
         if (!params["MessageSid"] || !params["MessageStatus"])
           return new Response("Bad request", { status: 400 });
-        // Storage not provisioned: do not acknowledge, so the event is retried, not lost.
-        return new Response("Outbox storage not configured", { status: 503 });
+        try {
+          const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+          const { tokenHash } = await import("@/lib/production/security");
+          const key = await tokenHash(
+            JSON.stringify(Object.entries(params).sort(([a], [b]) => a.localeCompare(b))),
+          );
+          const { error } = await supabaseAdmin.rpc("store_notify_callback", {
+            p_key: key,
+            p_sid: params["MessageSid"],
+            p_status: params["MessageStatus"],
+            p_payload: params,
+          });
+          if (error) return new Response("Callback persistence pending", { status: 503 });
+          return new Response("Stored", { status: 200 });
+        } catch {
+          return new Response("Callback storage unavailable", { status: 503 });
+        }
       },
     },
   },
 });
+

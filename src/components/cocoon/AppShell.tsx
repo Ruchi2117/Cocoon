@@ -24,6 +24,8 @@ import { EmergencyAccess } from "./EmergencyAccess";
 import { RoomAtmosphere } from "./RoomAtmosphere";
 import { WorldDoorway } from "./WorldDoorway";
 import { enterWorld } from "@/lib/cocoon/world-navigation";
+import { Button } from "@/components/ui/button";
+import { useProductionAuth } from "@/lib/production/auth";
 import { WorldMenu } from "./WorldMenu";
 
 const NAV: Record<Role, { to: string; label: string; icon: typeof Home }[]> = {
@@ -71,6 +73,7 @@ const ROLE_LABEL: Record<Role, string> = {
 
 export function AppShell({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
+  const account = useProductionAuth();
   const navigating = useRouterState({ select: (r) => r.status === "pending" });
   const prefs = usePrefs();
   const s = useDemoState();
@@ -173,6 +176,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           </nav>
           <div className="field-persona ml-auto flex items-center gap-2">
             <EmergencyAccess />
+            <Button variant="ghost" size="sm" onClick={() => void navigate({ to: "/account" })}>
+              {account.user ? "Account" : "Sign in"}
+            </Button>
             <label className="sr-only" htmlFor="role">
               Demo role
             </label>
@@ -283,3 +289,4 @@ export function RoleGate({ role, children }: { role: Role; children: ReactNode }
     );
   return <>{children}</>;
 }
+

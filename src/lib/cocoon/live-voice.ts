@@ -1,3 +1,4 @@
+import { bearerHeaders } from "@/lib/production/auth";
 import type { CallPhase } from "@/components/cocoon/art";
 export interface LiveVoiceHandle {
   close: () => void;
@@ -7,6 +8,7 @@ export interface LiveVoiceHandle {
 }
 export interface LiveVoiceOptions {
   signal: AbortSignal;
+  contextConsent: boolean;
   context: {
     supportMode?: boolean;
     intention?: "company" | "grounding" | "next-step";
@@ -34,13 +36,30 @@ export async function connectLiveVoice(o: LiveVoiceOptions): Promise<LiveVoiceHa
   let closed = false;
   let generating = false;
   let playing = false;
+  let sessionId: string | null = null;
+  let maxDuration: ReturnType<typeof setTimeout> | undefined;
+  const endServer = () => {
+    if (sessionId)
+      void bearerHeaders()
+        .then((headers) =>
+          fetch(`/api/companion/voice?session=${encodeURIComponent(sessionId ?? "")}`, {
+            method: "DELETE",
+            headers,
+            keepalive: true,
+          }),
+        )
+        .catch(() => undefined);
+  };
   let disconnected: ReturnType<typeof setTimeout> | undefined;
   let timeout: ReturnType<typeof setTimeout> | undefined;
   const close = () => {
     if (closed) return;
     closed = true;
     clearTimeout(timeout);
+    clearTimeout(maxDuration);
     clearTimeout(disconnected);
+    window.removeEventListener("pagehide", close);
+    endServer();
     o.signal.removeEventListener("abort", close);
     if (channel) {
       channel.onmessage = null;
@@ -57,6 +76,7 @@ export async function connectLiveVoice(o: LiveVoiceOptions): Promise<LiveVoiceHa
     o.onClosed?.();
   };
   o.signal.addEventListener("abort", close, { once: true });
+  window.addEventListener("pagehide", close, { once: true });
   try {
     o.onPhase("connecting");
     stream = await navigator.mediaDevices.getUserMedia({
@@ -67,7 +87,11 @@ export async function connectLiveVoice(o: LiveVoiceOptions): Promise<LiveVoiceHa
       stream.getTracks().forEach((t) => t.stop());
       throw new Error("Call cancelled.");
     }
-    stream.getAudioTracks().forEach((t) => pc.addTrack(t, stream!));
+    const activeStream = stream;
+    activeStream.getAudioTracks().forEach((t) => {
+      t.onended = close;
+      pc.addTrack(t, activeStream);
+    });
     pc.ontrack = (e) => {
       if (closed) return;
       audio.srcObject = e.streams[0] ?? new MediaStream([e.track]);
@@ -159,8 +183,13 @@ export async function connectLiveVoice(o: LiveVoiceOptions): Promise<LiveVoiceHa
     if (closed) throw new Error("Call cancelled.");
     const response = await fetch("/api/companion/voice", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ sdp: offer.sdp, ...o.context }),
+      headers: { "Content-Type": "application/json", ...(await bearerHeaders()) },
+      body: JSON.stringify({
+        sdp: offer.sdp,
+        audioConsent: true,
+        contextConsent: o.contextConsent,
+        ...o.context,
+      }),
       signal: o.signal,
     });
     if (!response.ok) {
@@ -169,7 +198,10 @@ export async function connectLiveVoice(o: LiveVoiceOptions): Promise<LiveVoiceHa
         .catch(() => ({ error: "Could not connect live voice." }))) as { error?: string };
       throw new Error(data.error ?? "Could not connect live voice.");
     }
+    sessionId = response.headers.get("X-Cocoon-Voice-Session");
     const sdp = await response.text();
+    if (closed) endServer();
+    maxDuration = setTimeout(close, 600000);
     if (closed) throw new Error("Call cancelled.");
     await pc.setRemoteDescription({ type: "answer", sdp });
     timeout = setTimeout(() => {
@@ -200,3 +232,4 @@ export async function connectLiveVoice(o: LiveVoiceOptions): Promise<LiveVoiceHa
     throw e;
   }
 }
+

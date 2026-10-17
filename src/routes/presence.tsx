@@ -43,10 +43,15 @@ export const Route = createFileRoute("/presence")({
       {
         name: "description",
         content:
-          "A configurable voice companion that knows your trip context and keeps SOS one tap away.",
+          "A scripted browser-speech companion demo. Natural AI voice remains disabled under the zero-payment policy.",
       },
       { property: "og:title", content: "Cocoon Presence" },
-      { property: "og:description", content: "A calm, confident companion for your walk home." },
+      {
+        property: "og:description",
+        content: "Scripted browser-speech demo; natural AI voice is disabled.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: () => (
@@ -879,3 +884,4 @@ function SettingsPanel({ voices }: { voices: SpeechSynthesisVoice[] }) {
     </div>
   );
 }
+

@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AccountRouteImport } from './routes/account'
 import { Route as CircleRouteImport } from './routes/circle'
 import { Route as ExploreRouteImport } from './routes/explore'
 import { Route as GuardianRouteImport } from './routes/guardian'
@@ -29,6 +30,11 @@ import { Route as ApiPublicWhatsappTwilioStatusRouteImport } from './routes/api/
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CircleRoute = CircleRouteImport.update({
@@ -111,6 +117,7 @@ const ApiPublicWhatsappTwilioStatusRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
   '/circle': typeof CircleRoute
   '/explore': typeof ExploreRoute
   '/guardian': typeof GuardianRoute
@@ -129,6 +136,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
   '/circle': typeof CircleRoute
   '/explore': typeof ExploreRoute
   '/guardian': typeof GuardianRoute
@@ -148,6 +156,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/account': typeof AccountRoute
   '/circle': typeof CircleRoute
   '/explore': typeof ExploreRoute
   '/guardian': typeof GuardianRoute
@@ -168,6 +177,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/account'
     | '/circle'
     | '/explore'
     | '/guardian'
@@ -186,6 +196,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/account'
     | '/circle'
     | '/explore'
     | '/guardian'
@@ -204,6 +215,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/account'
     | '/circle'
     | '/explore'
     | '/guardian'
@@ -223,6 +235,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AccountRoute: typeof AccountRoute
   CircleRoute: typeof CircleRoute
   ExploreRoute: typeof ExploreRoute
   GuardianRoute: typeof GuardianRoute
@@ -247,6 +260,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/circle': {
@@ -359,6 +379,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AccountRoute: AccountRoute,
   CircleRoute: CircleRoute,
   ExploreRoute: ExploreRoute,
   GuardianRoute: GuardianRoute,

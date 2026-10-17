@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { getWhatsAppStatus } from "@/lib/notify/status.functions";
@@ -79,14 +80,14 @@ export function AutoAlertsCard() {
       /* ignore */
     }
   };
-  const live = status?.live === true;
+  const live = Boolean(status?.live);
 
   return (
     <section className="card-soft space-y-3 p-4" aria-labelledby="auto-alerts">
       <div>
         <p className="eyebrow">Automatic WhatsApp alerts</p>
         <h2 id="auto-alerts" className="text-lg font-semibold">
-          Alerts sent for you, without switching apps
+          Automatic alerts · unavailable
         </h2>
       </div>
       {!status && !err && <p className="text-sm text-muted-foreground">Checking connection…</p>}
@@ -99,9 +100,10 @@ export function AutoAlertsCard() {
           <div>
             <p className="font-semibold">WhatsApp not connected — automatic messages unavailable</p>
             <p className="mt-1 text-xs text-muted-foreground">
-              Automatic sending is not active. Your choices below are saved as a setup draft on this
-              device, ready for a connected backend and WhatsApp business sender.
-              {status && (
+              Automatic sending is disabled under the zero-payment policy. Your choices below are
+              local drafts only; nobody is notified. No provider account or credentials are
+              requested.
+              {status && !status.paymentPolicyBlocked && (
                 <>
                   {" "}
                   Missing: {!status.storageConfigured && "secure backend and sign-in; "}
@@ -122,7 +124,7 @@ export function AutoAlertsCard() {
       )}
 
       <fieldset className="space-y-1.5">
-        <legend className="text-sm font-medium">Send automatically when…</legend>
+        <legend className="text-sm font-medium">Local demo setup draft only</legend>
         {(Object.keys(LABEL) as NotifyEvent[]).map((e) => (
           <label key={e} className="flex items-center gap-2 text-sm">
             <input
@@ -159,8 +161,12 @@ export function AutoAlertsCard() {
         proof of danger. Contacts receive alerts only after they opt in. Alerts contain destination
         and ETA, never chat transcripts, and are never triggered by the AI companion's guesses.
         {!live &&
-          " These choices are saved on this device and take effect once WhatsApp is connected."}
+          " These local drafts never enable production alerts. Save real preferences in your private account."}
       </p>
+      <Link to="/account" className="text-sm underline">
+        Private guardian enrollment & production preferences ↗
+      </Link>
     </section>
   );
 }
+

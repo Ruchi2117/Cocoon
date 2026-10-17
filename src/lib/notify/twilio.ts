@@ -19,7 +19,7 @@ export const TEMPLATE_VARS: Record<NotifyEvent, string[]> = {
   trip_started: ["traveller", "destination", "eta"],
   checkin_overdue: ["traveller", "destination", "eta", "note"],
   concern: ["traveller", "destination", "eta"],
-  sos: ["traveller", "destination", "eta"],
+  sos: ["traveller", "destination", "eta", "note", "location", "location_time", "accuracy"],
   arrived: ["traveller", "destination"],
 };
 
@@ -44,25 +44,43 @@ export function twilioProvider(cfg: TwilioConfig): WhatsAppProvider {
   const f = cfg.fetchImpl ?? fetch;
   return {
     async send({ toE164Digits, event, vars }): Promise<SendResult> {
-      const res = await f(`${GATEWAY}/Messages.json`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${cfg.lovableApiKey}`,
-          "X-Connection-Api-Key": cfg.twilioApiKey,
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({
-          From: `whatsapp:${cfg.from}`,
-          To: `whatsapp:+${toE164Digits}`,
-          ContentSid: cfg.templates[event],
-          ContentVariables: contentVariables(event, vars),
-          StatusCallback: cfg.statusCallbackUrl,
-        }),
-      });
+      let res: Response;
+      try {
+        res = await f(`${GATEWAY}/Messages.json`, {
+          method: "POST",
+          signal: AbortSignal.timeout(10000),
+          headers: {
+            Authorization: `Bearer ${cfg.lovableApiKey}`,
+            "X-Connection-Api-Key": cfg.twilioApiKey,
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams({
+            From: `whatsapp:${cfg.from}`,
+            To: `whatsapp:+${toE164Digits}`,
+            ContentSid: cfg.templates[event],
+            ContentVariables: contentVariables(event, vars),
+            StatusCallback: cfg.statusCallbackUrl,
+          }),
+        });
+      } catch {
+        return {
+          ok: false,
+          retryable: false,
+          error:
+            "Provider acceptance unknown; operator reconciliation required. Do not resend blindly.",
+        };
+      }
       const text = await res.text();
       if (!res.ok) {
-        const retryable = res.status === 429 || res.status >= 500;
-        return { ok: false, retryable, error: `Twilio ${res.status}: ${text.slice(0, 300)}` };
+        const retryable = res.status === 429;
+        return {
+          ok: false,
+          retryable,
+          error:
+            res.status >= 500
+              ? "Provider acceptance unknown; operator review required."
+              : `Twilio request rejected (${res.status})`,
+        };
       }
       try {
         const sid = (JSON.parse(text) as { sid?: string }).sid;
@@ -88,16 +106,22 @@ export function readTwilioConfig(env: Record<string, string | undefined>, origin
   const missing = need.filter((k) => !env[k]);
   if (missing.length) return { ok: false as const, missing };
   const templates = Object.fromEntries(
-    Object.entries(TEMPLATE_ENV).map(([e, k]) => [e, env[k]!]),
+    Object.entries(TEMPLATE_ENV).map(([e, k]) => [e, env[k] ?? ""]),
   ) as Record<NotifyEvent, string>;
+  const from = env["TWILIO_WHATSAPP_FROM"] ?? "";
+  const invalid = Object.entries(templates)
+    .filter(([, sid]) => !/^HX[0-9a-fA-F]{32}$/.test(sid))
+    .map(([e]) => TEMPLATE_ENV[e as NotifyEvent]);
+  if (!/^\+[1-9]\d{7,14}$/.test(from)) invalid.push("TWILIO_WHATSAPP_FROM");
+  if (invalid.length) return { ok: false as const, missing: invalid };
   return {
     ok: true as const,
     missing: [] as string[],
-    authToken: env["TWILIO_AUTH_TOKEN"]!,
+    authToken: env["TWILIO_AUTH_TOKEN"] ?? "",
     config: {
-      lovableApiKey: env["LOVABLE_API_KEY"]!,
-      twilioApiKey: env["TWILIO_API_KEY"]!,
-      from: env["TWILIO_WHATSAPP_FROM"]!,
+      lovableApiKey: env["LOVABLE_API_KEY"] ?? "",
+      twilioApiKey: env["TWILIO_API_KEY"] ?? "",
+      from,
       statusCallbackUrl: `${origin}/api/public/whatsapp/twilio-status`,
       templates,
     } satisfies TwilioConfig,
@@ -143,3 +167,4 @@ export async function verifyTwilioSignature(
     diff |= expected.charCodeAt(i) ^ signature.charCodeAt(i);
   return diff === 0;
 }
+

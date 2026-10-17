@@ -1,0 +1,1 @@
+ALTER POLICY outbox_recipient ON public.notify_outbox USING (EXISTS (SELECT 1 FROM public.guardian_enrollments g WHERE g.id = notify_outbox.recipient_id AND g.recipient_id = auth.uid() AND g.consent='opted_in' AND g.revoked_at IS NULL));

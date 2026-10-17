@@ -1,3 +1,5 @@
+import { useProductionAuth, bearerHeaders } from "@/lib/production/auth";
+import { Link } from "@tanstack/react-router";
 import { PresenceBuddy } from "./PresenceBuddy";
 import { useEffect, useImperativeHandle, useRef, useState, type Ref } from "react";
 import { Mic, MicOff, Phone, PhoneOff, Volume2, VolumeX } from "lucide-react";
@@ -6,6 +8,7 @@ import { useDemoState } from "@/lib/cocoon/store";
 import { usePrefs } from "@/lib/cocoon/locale";
 import { activeTrip } from "@/lib/cocoon/access";
 import { type CallPhase, Waveform } from "./art";
+import { GEMINI_LIVE_UNAVAILABLE, VOICE_DISABLED } from "@/lib/production/provider-policy";
 
 export interface LiveVoiceControls {
   startSupport: () => boolean;
@@ -18,6 +21,9 @@ export function LiveVoicePanel({
   controlRef?: Ref<LiveVoiceControls>;
   onEnded?: () => void;
 }) {
+  const { user } = useProductionAuth();
+  const [audioConsent, setAudioConsent] = useState(false);
+  const [contextConsent, setContextConsent] = useState(false);
   const s = useDemoState(),
     prefs = usePrefs(),
     trip = activeTrip(s);
@@ -38,7 +44,8 @@ export function LiveVoicePanel({
     ctrl = useRef<AbortController | null>(null);
   useEffect(() => {
     const c = new AbortController();
-    void fetch("/api/companion/voice", { signal: c.signal })
+    void bearerHeaders()
+      .then((headers) => fetch("/api/companion/voice", { signal: c.signal, headers }))
       .then((r) => r.json())
       .then((d: { available?: boolean }) => {
         if (!c.signal.aborted) {
@@ -54,7 +61,7 @@ export function LiveVoicePanel({
       ctrl.current?.abort();
       conn.current?.close();
     };
-  }, []);
+  }, [user?.id]);
   const end = () => {
     ctrl.current?.abort();
     starting.current = false;
@@ -69,7 +76,7 @@ export function LiveVoicePanel({
     onEnded?.();
   };
   const start = async (supportMode = false) => {
-    if (starting.current || conn.current || !available) return;
+    if (starting.current || conn.current || !available || !audioConsent) return;
     starting.current = true;
     setError("");
     setCaption("");
@@ -77,17 +84,19 @@ export function LiveVoicePanel({
     setPhase("connecting");
     const c = new AbortController();
     ctrl.current = c;
+    let ended = false;
     try {
       const connection = await connectLiveVoice({
         signal: c.signal,
+        contextConsent,
         context: {
           supportMode,
           intention,
-          situation: situation.trim(),
+          ...(contextConsent ? { situation: situation.trim() } : {}),
           name: s.companion.name,
           style: s.companion.style,
           country: prefs.country,
-          ...(trip && shareTrip
+          ...(trip && shareTrip && contextConsent
             ? {
                 destination: trip.destination,
                 eta: trip.etaMinutes,
@@ -96,11 +105,12 @@ export function LiveVoicePanel({
             : {}),
         },
         onClosed: () => {
-          if (!c.signal.aborted) {
-            c.abort();
+          ended = true;
+          if (!c.signal.aborted && ctrl.current === c) {
             starting.current = false;
             conn.current = null;
             setOn(false);
+            setPhase((value) => (value === "error" ? "error" : "idle"));
             setMuted(false);
             setSpeaker(true);
             audioChoices.current = { muted: false, speaker: true };
@@ -117,15 +127,15 @@ export function LiveVoicePanel({
           if (!c.signal.aborted) setError(t);
         },
       });
-      if (c.signal.aborted) connection.close();
+      if (c.signal.aborted || ended || ctrl.current !== c) connection.close();
       else {
         conn.current = connection;
         connection.mute(audioChoices.current.muted);
         connection.speaker(audioChoices.current.speaker);
       }
     } catch (e) {
-      starting.current = false;
-      if (!c.signal.aborted) {
+      if (!c.signal.aborted && ctrl.current === c) {
+        starting.current = false;
         setError(e instanceof Error ? e.message : "Voice unavailable.");
         setPhase("error");
         setOn(false);
@@ -134,7 +144,7 @@ export function LiveVoicePanel({
   };
   useImperativeHandle(controlRef, () => ({
     startSupport: () => {
-      if (!available) {
+      if (!available || !audioConsent) {
         setError(
           "Natural voice is not connected. Choose Browser demo explicitly to try scripted support, or use the contact and SOS controls.",
         );
@@ -149,7 +159,7 @@ export function LiveVoicePanel({
     <section className="live-voice-panel">
       <div className="presence-kicker">
         <span>COCOON PRESENCE / NATURAL VOICE</span>
-        <span>{available ? "Provider configured" : "Setup required"}</span>
+        <span>{available ? "Provider configured" : "Disabled · zero payment"}</span>
       </div>
       <div className="presence-title">
         A LITTLE
@@ -167,7 +177,7 @@ export function LiveVoicePanel({
             : phase === "error"
               ? "Connection interrupted"
               : `${s.companion.name} · ${phase}`
-          : "Natural speech-to-speech AI"}
+          : "Natural AI voice · disabled"}
       </p>
       <div className="my-4 flex justify-center">
         <Waveform active={phase === "speaking" || phase === "listening"} tone="light" />
@@ -179,10 +189,36 @@ export function LiveVoicePanel({
         {caption ||
           (available
             ? "Speak naturally, interrupt, or take a quiet moment. The companion is AI, and cannot contact authorities."
-            : "Live voice isn't connected yet. Browser demo is available in the other tab. A provider key and local voice configuration are required to enable natural conversation.")}
+            : VOICE_DISABLED)}
       </p>
+      {!available && (
+        <p className="mx-auto mb-4 max-w-lg text-center text-xs leading-relaxed">
+          {GEMINI_LIVE_UNAVAILABLE}
+        </p>
+      )}
       {!on && (
-        <fieldset className="voice-brief" disabled={!checked}>
+        <fieldset className="voice-brief" disabled={!checked || !available}>
+          {!user && (
+            <Link to="/account" className="underline">
+              Private account · natural voice stays disabled ↗
+            </Link>
+          )}
+          <label>
+            <input
+              type="checkbox"
+              checked={audioConsent}
+              onChange={(e) => setAudioConsent(e.target.checked)}
+            />{" "}
+            I choose to share microphone audio with OpenAI for this AI call.
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={contextConsent}
+              onChange={(e) => setContextConsent(e.target.checked)}
+            />{" "}
+            Include my optional note and selected demo trip summary.
+          </label>
           <legend>What would help right now?</legend>
           <div className="voice-intentions">
             {(
@@ -263,7 +299,7 @@ export function LiveVoicePanel({
           <button
             className="voice-start"
             onClick={() => void start()}
-            disabled={!available || !checked}
+            disabled={!available || !checked || !audioConsent}
           >
             <Phone size={18} />
             {!checked

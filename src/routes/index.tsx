@@ -17,13 +17,16 @@ export const Route = createFileRoute("/")({
       { title: "Cocoon — Your Safer Route Companion" },
       {
         name: "description",
-        content: "Plan safer walks, share trips with a guardian and travel with an AI companion.",
+        content:
+          "Explore walking routes, personal safety tools and a scripted companion demo. Paid voice and automatic WhatsApp are disabled.",
       },
       { property: "og:title", content: "Cocoon — Your Safer Route Companion" },
       {
         property: "og:description",
         content: "Safety-aware journeys for students and hostel residents.",
       },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Home,
@@ -178,3 +181,4 @@ function HomeTools() {
     </div>
   );
 }
+

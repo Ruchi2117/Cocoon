@@ -1,0 +1,49 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1792254204253,
+      "tag": "0000_cocoon_private_safety",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792254460185,
+      "tag": "0001_cocoon_safety_hardening",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792254600061,
+      "tag": "0002_cocoon_queue_claim_and_recipient_access",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792254669381,
+      "tag": "0003_cocoon_atomic_sos_intent",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792254870778,
+      "tag": "0004_cocoon_atomic_enrollment_limit",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792255182878,
+      "tag": "0005_cocoon_outbox_recipient_qualified_review",
+      "breakpoints": true
+    }
+  ]
+}
+

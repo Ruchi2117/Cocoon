@@ -10,7 +10,7 @@
 <!-- LOVABLE:END -->
 
 - Cocoon data lives in a localStorage demo adapter (`src/lib/cocoon/store.ts`) with role access rules in `access.ts` and all mutations/incident transitions in `actions.ts` — single source of truth; swap for Lovable Cloud + RLS when a real backend is approved.
-- Routing, companion conversation and speech use provider abstractions. The default companion remains scripted/browser speech. Optional Realtime voice is a localhost-only opt-in (`docs/LIVE-VOICE.md`); production requires authentication and usage controls. Every simulated behaviour must stay labelled.
+- Routing, companion conversation and speech use provider abstractions. The default companion remains scripted/browser speech. Production Realtime voice uses authenticated server control, durable quotas and explicit consent; activation stays off until provider and durable cleanup scheduling are verified (`src/lib/production/PRODUCTION.md`). Every simulated behaviour must stay labelled.
 - Leaflet is loaded only via `MapView` (lazy + ClientOnly) because it touches `window` at import.
 - Live geocoding/walking routes go through `src/lib/cocoon/geo.ts` (Photon + FOSSGIS OSRM foot), explicit-submit only with timeouts/throttle/cache; seeded paths are a labelled dashed fallback — public community endpoints, no keys. Never imply routes guarantee safety.
 - Demo role and actor identities are sessionStorage per tab; shared records stay in localStorage. Persisted records are validated by `persistence.ts`.
@@ -21,5 +21,12 @@
 
 - User prefs (user-confirmed country, units) live in `src/lib/cocoon/locale.ts` (`cocoon-prefs-v1`); country only selects the authority directory, never inferred — keeps emergency info scoped.
 - External sharing (`share.ts`) is a user-initiated handoff logged separately from in-app notifications — Cocoon cannot observe external delivery.
-- Automatic WhatsApp alerts live in `src/lib/notify/` (provider-agnostic outbox engine + Twilio adapter) behind a `NotifyRepo` interface; not live until Cloud storage, Twilio sender/templates and cron exist — see docs/whatsapp/SETUP.md. Never simulate sends.
+- Automatic WhatsApp alerts live in `src/lib/notify/` (provider-agnostic outbox engine + Twilio adapter) behind a `NotifyRepo` interface; production storage is provided by `src/lib/production/notify-repo.ts`, with activation off until Twilio sender/templates and durable scheduling are verified — see `src/lib/production/PRODUCTION.md`. Never simulate sends.
+- Hosted builds use the Cloudflare Nitro preset and retain the custom TanStack server entry, so deployment uses the supported runtime without replacing the source's error handling.
+
+
+- Private production actions live in `src/lib/production/`, never the demo adapter; verified bearer identity plus RLS keeps local role choices out of production authorization.
+- SOS session and outbox intent commit through one database transaction; signed callback processing and worker claims remain durable so crashes cannot silently lose intents or blindly resend ambiguous acceptance.
+- Production provider entry points enforce the shared immutable provider policy before outgoing traffic; environment credentials cannot override it, preventing accidental paid activation in this release.
+- Gemini Live remains an explicit unavailable provider policy entry with no token or audio transport; the official unpaid-service data restrictions are incompatible with unrestricted safety conversations, so keys and consent cannot enable it.
 

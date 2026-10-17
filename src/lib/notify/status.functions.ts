@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { readTwilioConfig } from "./twilio";
+import { PROVIDER_POLICY, WHATSAPP_DISABLED } from "@/lib/production/provider-policy";
 
 /** Reports whether automatic WhatsApp alerts can run. Exposes secret NAMES only, never values. */
 export const getWhatsAppStatus = createServerFn({ method: "GET" }).handler(async () => {
@@ -9,8 +10,15 @@ export const getWhatsAppStatus = createServerFn({ method: "GET" }).handler(async
   const auth = storage; // real sign-in requires the backend
   return {
     // Environment variables alone do not mean storage, auth or scheduling is wired.
-    live: false as boolean,
-    repositoryConnected: false,
+    live:
+      PROVIDER_POLICY.whatsapp &&
+      provider.ok &&
+      storage &&
+      env["COCOON_WHATSAPP_ENABLED"] === "true" &&
+      env["COCOON_DURABLE_SCHEDULER_READY"] === "true",
+    repositoryConnected: storage,
+    paymentPolicyBlocked: !PROVIDER_POLICY.whatsapp,
+    message: WHATSAPP_DISABLED,
     providerConfigured: provider.ok,
     providerMissing: provider.missing,
     storageConfigured: storage,
@@ -18,3 +26,4 @@ export const getWhatsAppStatus = createServerFn({ method: "GET" }).handler(async
     schedulerSecret: Boolean(env["LOVABLE_CRON_SECRET"]),
   };
 });
+

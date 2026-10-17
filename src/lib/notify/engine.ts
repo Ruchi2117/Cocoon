@@ -35,6 +35,13 @@ export interface TripSnapshot {
   id: string;
   travellerId: string;
   travellerName?: string | undefined;
+  emergencyNote?: string | undefined;
+  locationSnapshot?: {
+    latitude: number;
+    longitude: number;
+    timestamp: number;
+    accuracy: number;
+  } | null;
   status: "active" | "completed" | "cancelled";
   destination: string;
   etaIso: string;
@@ -131,8 +138,7 @@ export class NotifyError extends Error {
   }
 }
 
-let n = 0;
-const uid = (p: string) => `${p}_${Date.now().toString(36)}_${(n++).toString(36)}`;
+const uid = (p: string) => `${p}_${crypto.randomUUID()}`;
 
 /** Message variables — structured trip facts only; never transcripts or free text from AI. */
 export function templateVars(trip: TripSnapshot, event: NotifyEvent): Record<string, string> {
@@ -144,6 +150,17 @@ export function templateVars(trip: TripSnapshot, event: NotifyEvent): Record<str
   if (event === "checkin_overdue")
     v["note"] =
       "A planned check-in was missed. This does not mean something is wrong — please try contacting them.";
+  if (event === "sos") {
+    const l = trip.locationSnapshot;
+    v["note"] = trip.emergencyNote || "No note provided";
+    v["location"] = l
+      ? `https://www.openstreetmap.org/?mlat=${l.latitude}&mlon=${l.longitude}#map=16/${l.latitude}/${l.longitude}`
+      : "No location shared";
+    v["location_time"] = l ? new Date(l.timestamp).toISOString() : "Not available";
+    v["accuracy"] = l
+      ? `${Math.round(l.accuracy)} m; one-time snapshot, not live tracking`
+      : "Not available";
+  }
   return v;
 }
 
@@ -296,7 +313,9 @@ export async function runDispatch(repo: NotifyRepo, provider: WhatsAppProvider, 
     const rules = await repo.getRules(m.travellerId);
     const digits = r ? intlDigits(r.phone) : null;
     let cancelReason: string | null = null;
-    if (!r || r.optIn !== "opted_in") cancelReason = "recipient_not_opted_in";
+    if (trip?.status === "cancelled" || (trip?.status === "completed" && m.event !== "arrived"))
+      cancelReason = "session_ended";
+    else if (!r || r.optIn !== "opted_in") cancelReason = "recipient_not_opted_in";
     else if (!rules?.enabled[m.event]) cancelReason = "rule_disabled";
     else if (r.travellerId !== m.travellerId || trip?.travellerId !== m.travellerId)
       cancelReason = "ownership_changed";
@@ -319,10 +338,11 @@ export async function runDispatch(repo: NotifyRepo, provider: WhatsAppProvider, 
       report.cancelled++;
       continue;
     }
+    if (!digits) continue;
     const attempts = m.attempts + 1;
     let res: SendResult;
     try {
-      res = await provider.send({ toE164Digits: digits!, event: m.event, vars: m.vars });
+      res = await provider.send({ toE164Digits: digits, event: m.event, vars: m.vars });
     } catch (e) {
       res = { ok: false, retryable: true, error: e instanceof Error ? e.message : "network error" };
     }
@@ -407,3 +427,4 @@ export async function applyProviderStatus(
   else await repo.updateMessage(m.id, { statusTimes: times });
   return "applied";
 }
+

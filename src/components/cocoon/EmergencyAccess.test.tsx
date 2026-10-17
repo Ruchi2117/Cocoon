@@ -1,7 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { EmergencyAccess } from "./EmergencyAccess";
 vi.mock("@tanstack/react-router", () => ({
+  useRouter: () => ({ navigate: vi.fn() }),
   Link: ({
     children,
     to,
@@ -34,7 +36,11 @@ describe("explicit location request", () => {
     HTMLDialogElement.prototype.close = vi.fn(function (this: HTMLDialogElement) {
       this.removeAttribute("open");
     });
-    render(<EmergencyAccess />);
+    render(
+      <QueryClientProvider client={new QueryClient()}>
+        <EmergencyAccess />
+      </QueryClientProvider>,
+    );
     fireEvent.click(screen.getByRole("button", { name: "Emergency contacts and location" }));
     expect(get).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Use my current location" }));
@@ -48,3 +54,4 @@ describe("explicit location request", () => {
     expect(screen.getByText(/Location request cancelled/)).toBeInTheDocument();
   });
 });
+

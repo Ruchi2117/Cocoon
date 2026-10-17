@@ -1,3 +1,4 @@
+import { ProductionSOS } from "./ProductionSOS";
 import { useEffect, useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { HeartPulse, LocateFixed, Phone, X } from "lucide-react";
@@ -126,13 +127,15 @@ export function EmergencyAccess() {
           <em>SOMEONE.</em>
         </h2>
         <p>
-          This panel calls or prepares a message. It does not dispatch help or send automatically.
+          Calls and manual shares are separate from the private guardian SOS below. No authority
+          dispatch.
         </p>
         <p className="text-sm">
           <Link to="/kit" hash="sos-delivery" onClick={close}>
             SOS recipient preferences & delivery status ↗
           </Link>
         </p>
+        <ProductionSOS />
         <div className="emergency-call-list">
           {urgent.length ? (
             urgent.map((a) => (
@@ -244,3 +247,4 @@ export function EmergencyAccess() {
     </>
   );
 }
+

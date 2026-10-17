@@ -1,3 +1,4 @@
+import { ProductionSOS } from "./ProductionSOS";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -34,9 +35,16 @@ export function SosButton({ compact = false }: { compact?: boolean }) {
   const [note, setNote] = useState("");
   const guardians = selectedSosGuardians(s, prefs.guardianIds);
   const inc = openIncident(s);
-  if (inc) return compact ? null : <IncidentPanel />;
+  if (inc)
+    return (
+      <>
+        <ProductionSOS />
+        {compact ? null : <IncidentPanel />}
+      </>
+    );
   return (
     <div className={compact ? "" : "card-soft p-5"}>
+      <ProductionSOS />
       {!open ? (
         <Button
           variant="destructive"
@@ -291,3 +299,4 @@ export function Timeline({ events }: { events: { at: string; actor: string; text
     </details>
   );
 }
+

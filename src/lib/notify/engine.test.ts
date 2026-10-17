@@ -400,12 +400,16 @@ describe("twilio adapter", () => {
       "1": "A",
       "2": "Lib",
       "3": "12:30",
+      "4": "",
+      "5": "",
+      "6": "",
+      "7": "",
     });
     expect(contentVariables("arrived", { traveller: "A", destination: "B" })).toBe(
       '{"1":"A","2":"B"}',
     );
   });
-  it("maps 429/5xx as retryable, 4xx as permanent", async () => {
+  it("retries 429 only and treats ambiguous 5xx as operator-review failures", async () => {
     const mk = (status: number) =>
       twilioProvider({
         lovableApiKey: "k",
@@ -424,8 +428,12 @@ describe("twilio adapter", () => {
     expect((await mk(429).send({ toE164Digits: "1", event: "sos", vars: {} })).retryable).toBe(
       true,
     );
+    expect((await mk(503).send({ toE164Digits: "1", event: "sos", vars: {} })).retryable).toBe(
+      false,
+    );
     expect((await mk(400).send({ toE164Digits: "1", event: "sos", vars: {} })).retryable).toBe(
       false,
     );
   });
 });
+
