@@ -43,6 +43,13 @@
       "when": 1792255182878,
       "tag": "0005_cocoon_outbox_recipient_qualified_review",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792255555187,
+      "tag": "0006_cocoon_inapp_guardian_sos",
+      "breakpoints": true
     }
   ]
 }

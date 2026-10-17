@@ -4,16 +4,17 @@ import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useProductionAuth } from "@/lib/production/auth";
-import { accountData, submitSOS } from "@/lib/production/actions.functions";
+import { inappAccountData, submitInAppSOS } from "@/lib/production/inapp.functions";
 import type { locationInput } from "@/lib/production/security";
 import type { z } from "zod";
 import { WHATSAPP_DISABLED } from "@/lib/production/provider-policy";
+import { INAPP_LIMITATION } from "@/lib/production/inapp-schema";
 export function ProductionSOS() {
   const { user } = useProductionAuth(),
-    read = useServerFn(accountData),
-    submit = useServerFn(submitSOS);
+    read = useServerFn(inappAccountData),
+    submit = useServerFn(submitInAppSOS);
   const query = useQuery({
-    queryKey: ["production-account", user?.id],
+    queryKey: ["inapp-account", user?.id],
     queryFn: () => read(),
     enabled: !!user,
   });
@@ -27,12 +28,19 @@ export function ProductionSOS() {
     [message, setMessage] = useState("");
   const generation = useRef(0),
     key = useRef<string | null>(null);
-  useEffect(
-    () => () => {
-      generation.current++;
-    },
-    [],
-  );
+  const invalidateLocation = () => {
+    generation.current++;
+    key.current = null;
+  };
+  useEffect(() => {
+    setOpen(false);
+    setLocation(null);
+    setConsent(false);
+    setPending(false);
+    setSelected([]);
+    setNote("");
+    return invalidateLocation;
+  }, [user?.id]);
   const close = () => {
     generation.current++;
     setPending(false);
@@ -74,14 +82,15 @@ export function ProductionSOS() {
     ) ?? [];
   return (
     <section className="space-y-3 border-t py-4">
-      <p className="text-xs">PRIVATE ACCOUNT / GUARDIAN SOS WIRING</p>
+      <p className="text-xs">PRIVATE ACCOUNT / REAL IN-APP GUARDIAN SOS</p>
+      <p className="text-sm">{INAPP_LIMITATION} The local SOS demo is separate.</p>
       <p className="text-sm" role="status">
         {WHATSAPP_DISABLED}
       </p>
       {!user ? (
         <p>
           <Link to="/account" className="underline">
-            Sign in to configure automatic SOS ↗
+            Sign in for real in-app guardian SOS ↗
           </Link>
         </p>
       ) : !open ? (
@@ -95,14 +104,21 @@ export function ProductionSOS() {
             setOpen(true);
           }}
         >
-          Prepare a private SOS record
+          Prepare in-app guardian SOS
         </Button>
       ) : (
         <div className="space-y-3">
           <h3 className="font-display text-xl">Confirm a guardian SOS</h3>
+          <Button
+            variant="outline"
+            disabled={busy || query.isFetching}
+            onClick={() => void query.refetch()}
+          >
+            Refresh in-app guardians
+          </Button>
           <p>
-            WhatsApp is disabled. Saving creates a private SOS record and unsent queue entries; it
-            does not notify anyone. No authority dispatch or nearby broadcast.
+            Confirm up to five opted-in guardians. This stores an alert in each chosen guardian’s
+            private Cocoon inbox only; they must open the app to retrieve it. No external messages.
           </p>
           {contacts.length ? (
             contacts.map((g) => (
@@ -116,7 +132,7 @@ export function ProductionSOS() {
                     )
                   }
                 />{" "}
-                {g.name} · WhatsApp consent confirmed
+                {g.name} · in-app consent confirmed
               </label>
             ))
           ) : (
@@ -126,6 +142,9 @@ export function ProductionSOS() {
                 Manage enrollment ↗
               </Link>
             </p>
+          )}
+          {query.error && (
+            <p role="alert">Guardian connections unavailable. Refresh before sending.</p>
           )}
           <label className="block">
             Optional note
@@ -177,16 +196,11 @@ export function ProductionSOS() {
               </Button>
             </div>
           )}
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant="destructive"
-              disabled={
-                busy ||
-                pending ||
-                !selected.length ||
-                !query.data?.prefs ||
-                (query.data.prefs.enabled as Record<string, boolean>)["sos"] !== true
-              }
+              className="h-auto min-h-9 whitespace-normal py-2"
+              disabled={busy || pending || !selected.length || selected.length > 5 || !!query.error}
               onClick={() =>
                 void (async () => {
                   if (!key.current) return;
@@ -196,15 +210,14 @@ export function ProductionSOS() {
                       data: {
                         requestKey: key.current,
                         recipientIds: selected,
-                        channel: "whatsapp",
+                        channel: "in_app",
                         note,
                         location: locationConsent ? location : null,
                         locationConsent,
-                        destination: "Emergency support request",
                       },
                     });
                     setMessage(
-                      `SOS saved. ${result.created.length + result.duplicates.length} unsent queue entry(s). WhatsApp disabled — nobody notified.`,
+                      `${result.duplicate ? "Existing SOS confirmed" : "SOS stored"} in ${result.count} guardian inbox(es). Not yet confirmed retrieved, read or acknowledged. App must be open; no external dispatch.`,
                     );
                     await query.refetch();
                     close();
@@ -216,7 +229,7 @@ export function ProductionSOS() {
                 })()
               }
             >
-              Save private SOS record only
+              Confirm in-app SOS to selected guardians
             </Button>
             <Button variant="outline" disabled={busy} onClick={close}>
               Cancel
@@ -231,4 +244,3 @@ export function ProductionSOS() {
     </section>
   );
 }
-

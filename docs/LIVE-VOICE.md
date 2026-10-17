@@ -1,3 +1,5 @@
+> Current release (17 October 2026): natural voice is locked off by the zero-payment policy in `src/lib/production/provider-policy.ts`. Credentials and environment flags cannot enable it. The authenticated production wiring now lives in `src/lib/production/`; see `PRODUCTION.md` there. The earlier local setup instructions below are historical and do not override this policy. Browser speech remains a labelled scripted demo.
+
 # Natural AI voice
 
 The Natural AI voice tab implements speech-to-speech WebRTC using OpenAI's unified Realtime call endpoint. This is a real connection path, **not an enabled service**. No live calls or provider spend occurred during development.

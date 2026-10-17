@@ -17,19 +17,21 @@ import {
 } from "@/lib/production/actions.functions";
 import type { Rules, OutboxMessage, TripSnapshot } from "@/lib/notify/engine";
 import { WHATSAPP_DISABLED, VOICE_DISABLED } from "@/lib/production/provider-policy";
+import { InAppGuardians } from "@/components/cocoon/InAppGuardians";
 export const Route = createFileRoute("/account")({
   head: () => ({
     meta: [
       { title: "Private account · Cocoon" },
       {
         name: "description",
-        content: "Private guardian consent, automatic alert preferences and delivery status.",
+        content:
+          "Private phone-free guardian consent, in-app SOS inbox and explicit acknowledgement. No background dispatch.",
       },
       { property: "og:title", content: "Private account · Cocoon" },
       {
         property: "og:description",
         content:
-          "Private guardian consent and SOS records. Paid voice and WhatsApp remain disabled.",
+          "Private in-app guardian SOS alerts while your inbox is open. Paid voice and WhatsApp remain disabled.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -80,6 +82,11 @@ function AccountPage() {
   }, [query.data]);
   useEffect(() => {
     const hash = new URLSearchParams(window.location.hash.slice(1));
+    const inappInvitation = hash.get("inapp");
+    if (inappInvitation) {
+      sessionStorage.setItem("cocoon-inapp-invitation", inappInvitation);
+      history.replaceState(null, "", window.location.pathname);
+    }
     const invitation =
       hash.get("guardian") ?? sessionStorage.getItem("cocoon-guardian-invitation") ?? "";
     setToken(invitation);
@@ -104,8 +111,9 @@ function AccountPage() {
       <section className="space-y-4">
         <h1 className="font-poster text-4xl">YOUR PRIVATE COCOON.</h1>
         <p>
-          Sign in for private guardian enrollment and SOS records. WhatsApp and natural AI voice are
-          disabled under the zero-payment policy. The local demo remains available.
+          Sign in for phone-free guardian enrollment and in-app SOS alerts while your inbox is open.
+          WhatsApp and natural AI voice are disabled under the zero-payment policy. The local demo
+          remains available.
         </p>
         <div className="flex flex-wrap gap-3">
           {(["google", "lovable"] as const).map((provider) => (
@@ -147,6 +155,7 @@ function AccountPage() {
       </div>
       <p>Signed in as {user.email}. Private production records are separate from the local demo.</p>
       {query.error && <p role="alert">Could not load private account data.</p>}
+      <InAppGuardians />
       <form
         className="space-y-3 border-t pt-4"
         onSubmit={(e) => {
@@ -154,7 +163,7 @@ function AccountPage() {
           void run(() => save({ data: { displayName, enabled: rules, graceMinutes: grace } }));
         }}
       >
-        <h2 className="font-display text-2xl">Automatic alert preferences</h2>
+        <h2 className="font-display text-2xl">WhatsApp preferences · disabled channel</h2>
         <label className="block">
           Display name
           <input
@@ -212,7 +221,7 @@ function AccountPage() {
           });
         }}
       >
-        <h2 className="font-display text-2xl">Invite a guardian</h2>
+        <h2 className="font-display text-2xl">WhatsApp invitation · separate disabled channel</h2>
         <input
           aria-label="Guardian name"
           className="border bg-card p-2"
@@ -257,7 +266,9 @@ function AccountPage() {
           void run(() => confirm({ data: { token, phone, consent: true } }));
         }}
       >
-        <h2 className="font-display text-2xl">Confirm a guardian invitation</h2>
+        <h2 className="font-display text-2xl">
+          WhatsApp-only consent · not required for in-app alerts
+        </h2>
         <input
           aria-label="Invitation token"
           className="w-full border bg-card p-2"

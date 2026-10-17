@@ -113,6 +113,132 @@ export type Database = {
         }
         Relationships: []
       }
+      inapp_alerts: {
+        Row: {
+          acknowledged_at: string | null
+          created_at: string
+          delivered_at: string | null
+          enrollment_id: string
+          id: string
+          location: Json | null
+          note: string
+          read_at: string | null
+          recipient_id: string
+          sos_id: string
+          traveller_id: string
+          traveller_name: string
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          enrollment_id: string
+          id?: string
+          location?: Json | null
+          note?: string
+          read_at?: string | null
+          recipient_id: string
+          sos_id: string
+          traveller_id: string
+          traveller_name: string
+        }
+        Update: {
+          acknowledged_at?: string | null
+          created_at?: string
+          delivered_at?: string | null
+          enrollment_id?: string
+          id?: string
+          location?: Json | null
+          note?: string
+          read_at?: string | null
+          recipient_id?: string
+          sos_id?: string
+          traveller_id?: string
+          traveller_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inapp_alerts_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "inapp_guardians"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inapp_alerts_sos_id_fkey"
+            columns: ["sos_id"]
+            isOneToOne: false
+            referencedRelation: "inapp_sos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inapp_guardians: {
+        Row: {
+          consent: string
+          consent_at: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          invited_email: string
+          name: string
+          recipient_id: string | null
+          revoked_at: string | null
+          token_hash: string
+          traveller_id: string
+        }
+        Insert: {
+          consent?: string
+          consent_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invited_email: string
+          name: string
+          recipient_id?: string | null
+          revoked_at?: string | null
+          token_hash: string
+          traveller_id: string
+        }
+        Update: {
+          consent?: string
+          consent_at?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          invited_email?: string
+          name?: string
+          recipient_id?: string | null
+          revoked_at?: string | null
+          token_hash?: string
+          traveller_id?: string
+        }
+        Relationships: []
+      }
+      inapp_sos: {
+        Row: {
+          created_at: string
+          id: string
+          request_key: string
+          request_payload: Json
+          traveller_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          request_key: string
+          request_payload: Json
+          traveller_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          request_key?: string
+          request_payload?: Json
+          traveller_id?: string
+        }
+        Relationships: []
+      }
       notify_jobs: {
         Row: {
           id: string
@@ -342,7 +468,19 @@ export type Database = {
         Args: { p_hash: string; p_phone: string }
         Returns: string
       }
+      confirm_inapp_guardian: {
+        Args: { p_consent: boolean; p_hash: string }
+        Returns: string
+      }
       fail_ambiguous_notify: { Args: never; Returns: undefined }
+      invite_inapp_guardian: {
+        Args: { p_email: string; p_hash: string; p_name: string }
+        Returns: string
+      }
+      open_inapp_alert: {
+        Args: { p_ack?: boolean; p_id: string }
+        Returns: Json
+      }
       patch_notify: {
         Args: { p_id: string; p_patch: Json }
         Returns: undefined
@@ -350,7 +488,19 @@ export type Database = {
       reconcile_notify: { Args: { p_sid: string }; Returns: undefined }
       release_notify_worker: { Args: { p_token: string }; Returns: undefined }
       reserve_voice: { Args: { p_user: string }; Returns: string }
+      retrieve_inapp_inbox: { Args: never; Returns: Json }
       revoke_guardian: { Args: { p_id: string }; Returns: undefined }
+      revoke_inapp_guardian: { Args: { p_id: string }; Returns: undefined }
+      send_inapp_sos: {
+        Args: {
+          p_location: Json
+          p_location_consent: boolean
+          p_note: string
+          p_recipients: string[]
+          p_request: string
+        }
+        Returns: Json
+      }
       store_notify_callback: {
         Args: {
           p_key: string

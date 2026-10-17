@@ -29,4 +29,5 @@
 - SOS session and outbox intent commit through one database transaction; signed callback processing and worker claims remain durable so crashes cannot silently lose intents or blindly resend ambiguous acceptance.
 - Production provider entry points enforce the shared immutable provider policy before outgoing traffic; environment credentials cannot override it, preventing accidental paid activation in this release.
 - Gemini Live remains an explicit unavailable provider policy entry with no token or audio transport; the official unpaid-service data restrictions are incompatible with unrestricted safety conversations, so keys and consent cannot enable it.
+- In-app guardian consent, SOS requests and private alerts use separate tables and authenticated RPCs in `inapp.functions.ts`; never route them through WhatsApp outbox or paid provider policy. Recipient retrieval/opening creates receipts, acknowledgement is separate, and polling exists only in the visible open account inbox.
 

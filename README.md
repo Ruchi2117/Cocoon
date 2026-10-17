@@ -18,9 +18,9 @@ After building, `npm run preview` serves the Node production build at `http://12
 ## What is connected
 
 - Worldwide place search: Photon. Walking routes and directions: FOSSGIS OSRM foot. Map tiles: OpenStreetMap. These public services require a network connection and have no availability guarantee. Typed coordinates work without geocoding.
-- Journeys, progress, guardian updates and SOS are a **local demo** stored in this browser. Open another tab and select Guardian or Responder to explore the shared demo flows. Roles are independent per tab. No emergency dispatcher is contacted.
-- The default companion uses scripted replies and browser speech. Optional natural AI voice has a server-side integration, disabled until configured. See [live voice setup](docs/LIVE-VOICE.md).
-- Automatic WhatsApp sending is **not connected**. It requires authenticated persistent storage, a business sender, approved templates and a server scheduler. See [WhatsApp setup](docs/whatsapp/SETUP.md).
+- Journeys, progress and the labelled demo SOS remain browser-local. A separate authenticated **in-app guardian SOS** channel uses private Cloud records and phone-free, recipient-confirmed enrollment. Guardians must sign in and keep the inbox open; retrieval, opening and acknowledgement are distinct. No background/push, authority or nearby dispatch is provided.
+- The default companion uses scripted replies and browser speech. Natural AI voice is locked off by the current zero-payment policy, even if provider credentials exist. Authenticated server wiring and quotas are retained for review. Free Gemini is unsuitable for this sensitive-data use case. See [production status](src/lib/production/PRODUCTION.md).
+- Automatic WhatsApp is **disabled by the zero-payment policy**. Durable queue wiring exists, but provider account/sender/templates and scheduling remain unavailable. No payments, new provider accounts or real alerts were created during development. The independent in-app inbox does not use WhatsApp.
 - Safety Kit contacts/checklists are stored separately from demo records. The downloaded text Safety Card works offline; the whole application does not.
 
 ## Design and handoff
