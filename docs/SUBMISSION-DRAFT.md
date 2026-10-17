@@ -29,4 +29,6 @@ Independently exercised on the published site: fresh entry/Skip, route fallback,
 
 ## Submission freeze
 
+Final readiness patch: TypeScript, production build and 16 targeted navigation/Presence/hydration tests passed. The published fresh entry → Skip → Call navigation completed without error logs. Guest limit disclosures and corrected Kit wording were verified live. A few unrelated reduced-motion Reports warnings remain known; avoid claiming a completely warning-free audit.
+
 The supplied invitation says the deadline is 17 October 2026, 11:59 p.m. Pacific, which is 18 October 2026, 12:29 p.m. IST. Confirm the form's actual displayed deadline. This file is a draft, not a submission. Once submitted, stop code/content/deployment changes to the submitted project as requested by the organisers. Never include the private participant-hub token or personal credentials in public testing instructions.
