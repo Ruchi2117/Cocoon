@@ -35,3 +35,11 @@ The local copy retains the Node build preset; Lovable uses Cloudflare. Runtime p
 Lovable source `aaffc41bc70497871daeb55a8211ebba246fb88c` adds the session-scoped entry flow from GitHub `4ad6b57`. Publication requested with deployment `a3f3fe6a-21f4-40c3-bb0e-661a0f4ee03d`. The main address shows the full-screen welcome before the world; Enter and Skip remember the choice in the current tab. Direct routes remain direct and /welcome can replay the scene. Local TypeScript, lint, build and four focused tests passed; local browser verified entry, Enter, Skip and refresh. Auth public configuration and provider cost locks were preserved.
 
 Live browser verification completed: fresh root rendered the entry after hydration without app navigation; Skip revealed the world. Preview saved at docs/previews/entry-first-live.jpg.
+
+## Private journey functionality release
+
+Published source `063d8e595460b434e2d433d1a965a2ff5b60543a`, deployment `f9958708-a233-49c8-b5e9-ee752ce4261a`, GitHub implementation `9c999d5`. Adds authenticated journeys, separate guardian journey consent, explicit Routes review, manual check-ins, arrival/cancellation/stop-sharing and private history. See PRIVATE-JOURNEYS.md for boundaries. Paid providers remain disabled.
+
+Independent local validation: TypeScript and production build passed; 228 tests across 37 files passed with two workers. An overloaded concurrent run had two UI wait timeouts; the focused four guardian tests and subsequent complete suite passed. Targeted application lint passed; generated Supabase types retain generator formatting. Public live Journey hydrated successfully, its sign-in link reached Account with enabled sign-in controls, and the 390px Account view had no horizontal overflow. No OAuth, real account, location or outgoing alert was used. Hosted two-account end-to-end verification remains pending. Screenshot: previews/private-journey-live.jpg.
+
+Lovable reported 407.40 credits remaining after this pass; its 107.60 usage figure was cumulative project usage, not this pass's cost. No billing or paid provider changes were made.
