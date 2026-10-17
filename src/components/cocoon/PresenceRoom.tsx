@@ -1,107 +1,226 @@
-import { Link, useHydrated } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { useInView, useReducedMotion } from "motion/react";
 import {
+  ArrowUpRight,
+  Captions,
+  CaptionsOff,
   Mic,
   MicOff,
+  Phone,
   PhoneOff,
-  Send,
-  Settings2,
+  ShieldAlert,
   Volume2,
   VolumeX,
-  Square,
-  RotateCcw,
-  Pause,
-  Play,
-  ShieldAlert,
-  ArrowUpRight,
-  Sparkles,
-  MessageCircle,
-  Compass,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import { PresenceBuddy } from "@/components/cocoon/PresenceBuddy";
 import { SupportWorkspace } from "@/components/cocoon/SupportWorkspace";
 import { SosButton } from "@/components/cocoon/SosPanel";
-import { useBrowserSession } from "@/components/cocoon/useBrowserSession";
-import { useDemoState } from "@/lib/cocoon/store";
-import { activeTrip } from "@/lib/cocoon/access";
-import { usePrefs } from "@/lib/cocoon/locale";
-import { INTENTS, type PresenceAction, type PresenceIntent } from "@/lib/cocoon/presence-script";
-import type { SessionPhase } from "@/lib/cocoon/browser-session";
+import { ScriptedPresenceDemo } from "@/components/cocoon/ScriptedPresenceDemo";
+import { CallCharacter } from "@/components/cocoon/CallCharacter";
+import { WaveText } from "@/components/cocoon/WaveText";
+import { useLiveVoice, type LiveEvent } from "@/hooks/use-live-voice";
+import { useProductionAuth } from "@/lib/production/auth";
+import { supabase } from "@/integrations/supabase/client";
+import { kitContacts, phoneHref, type KitContact } from "@/lib/cocoon/support-session";
+import {
+  CALL_LIMIT_SECONDS,
+  GUEST_CALL_LIMIT_SECONDS,
+  RELATIONSHIPS,
+  RIDES,
+  VOICES,
+  callContextSchema,
+  callLimits,
+  type CallContextInput,
+} from "@/lib/cocoon/call-persona";
 
-const labels: Record<SessionPhase, string> = {
-  idle: "Here, in your own time",
-  connecting: "Starting browser speech",
-  listening: "Listening · one turn",
-  thinking: "Choosing a scripted reply",
-  speaking: "Speaking · browser voice",
-  muted: "Mic off · your turn",
-  error: "Paused · action needed",
-  ended: "Session ended",
+type Line = { id: number; who: "you" | "them"; text: string };
+const blank = {
+  mode: "pretend" as "pretend" | "company",
+  alias: "Didi",
+  relationship: "sister" as keyof typeof RELATIONSHIPS,
+  voice: "marin" as keyof typeof VOICES,
+  language: "en" as "en" | "hinglish",
+  ride: "" as "" | keyof typeof RIDES,
+  arrival: "",
+  eta: "",
+  safeWord: "",
+  audioConsent: false,
+  roleplayAck: false,
+  ageAck: false,
 };
-const intentIcons = { company: MessageCircle, ground: Sparkles, next: Compass };
+const clock = (s: number) =>
+  `${Math.floor(s / 60)}:${String(Math.max(0, Math.floor(s % 60))).padStart(2, "0")}`;
+
+/** Build the validated context sent once with the call start. Exported for tests. */
+export function toCallContext(f: typeof blank): CallContextInput {
+  return {
+    mode: f.mode,
+    alias: f.alias,
+    relationship: f.relationship,
+    voice: f.voice,
+    language: f.language,
+    ride: f.ride || null,
+    arrival: f.arrival.trim() || null,
+    etaMinutes: f.eta ? Number(f.eta) : null,
+    safeWord: f.safeWord.trim() || null,
+    audioConsent: f.audioConsent as true,
+    roleplayAck: f.roleplayAck as true,
+    ageAck: f.ageAck as true,
+  };
+}
+
+function TrustedDialer({ contacts }: { contacts: KitContact[] }) {
+  return (
+    <div className="call-dialer">
+      <p className="night-eyebrow">Call a real person instead</p>
+      {contacts.length ? (
+        <ul>
+          {contacts.map((c) => (
+            <li key={c.number}>
+              <a href={phoneHref(c.number) ?? undefined}>
+                <Phone size={16} /> {c.name}
+                <span>{c.number}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>
+          No trusted numbers saved on this device. <Link to="/kit">Add them in Safety Kit ↗</Link>
+        </p>
+      )}
+      <small>Opens your phone’s dialler. You place the call; Cocoon cannot see it.</small>
+    </div>
+  );
+}
+
 export function PresenceRoom() {
-  const prefs = usePrefs();
-  const demo = useDemoState();
-  const trip = activeTrip(demo);
-  const { snapshot: s, controller } = useBrowserSession(() => ({
-    country: prefs.country,
-    ...(trip ? { demoDestination: trip.destination } : {}),
-  }));
-  const [input, setInput] = useState("");
-  const [settings, setSettings] = useState(false);
+  const { user, ready } = useProductionAuth();
+  const limits = callLimits(Boolean(user));
+  const [form, setForm] = useState(blank);
   const [sos, setSos] = useState(false);
-  const [still, setStill] = useState(false);
-  const [dim, setDim] = useState(false);
-  const [visible, setVisible] = useState(true);
   const [captureStop, setCaptureStop] = useState(0);
-  const [deskSignal, setDeskSignal] = useState(0);
-  const scene = useRef<HTMLElement>(null);
-  const inView = useInView(scene);
-  const hydrated = useHydrated();
-  const reducePreference = useReducedMotion();
-  const reduced = hydrated && !!reducePreference;
-  const previousMode = useRef(s.mode);
-  const previousActive = useRef(s.active);
-  const captionRef = useRef<HTMLDivElement>(null);
+  const [captions, setCaptions] = useState(true);
+  const [speaker, setSpeaker] = useState(true);
+  const [lines, setLines] = useState<Line[]>([]);
+  const [speaking, setSpeaking] = useState(false);
+  const [elapsed, setElapsed] = useState(0);
+  const [contacts, setContacts] = useState<KitContact[]>([]);
+  const [setupError, setSetupError] = useState<string | null>(null);
+  const speakTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const lineId = useRef(0);
+  const call = useLiveVoice({
+    onEvent: (e: LiveEvent) => {
+      const delta = typeof e["delta"] === "string" ? e["delta"] : "";
+      if (
+        e.type === "session.output_transcript.delta" ||
+        e.type === "session.input_transcript.delta"
+      ) {
+        const who: Line["who"] = e.type === "session.output_transcript.delta" ? "them" : "you";
+        if (who === "them") {
+          setSpeaking(true);
+          clearTimeout(speakTimer.current);
+          speakTimer.current = setTimeout(() => setSpeaking(false), 1200);
+        }
+        if (!delta) return;
+        // Ephemeral captions only: last few rows in memory, never stored or sent anywhere.
+        setLines((prev) => {
+          const last = prev[prev.length - 1];
+          if (last?.who === who)
+            return [...prev.slice(0, -1), { ...last, text: (last.text + delta).slice(-600) }];
+          return [...prev, { id: ++lineId.current, who, text: delta }].slice(-6);
+        });
+      }
+    },
+  });
+  const live =
+    call.status === "connecting" || call.status === "connected" || call.status === "stopping";
+
   useEffect(() => {
-    const hide = () => {
-      setVisible(!document.hidden);
-      if (document.hidden) setCaptureStop((v) => v + 1);
-    };
-    document.addEventListener("visibilitychange", hide);
-    return () => document.removeEventListener("visibilitychange", hide);
+    try {
+      setContacts(kitContacts(localStorage.getItem("cocoon-kit-v1")));
+    } catch {
+      setContacts([]);
+    }
   }, []);
   useEffect(() => {
-    if ((previousActive.current && !s.active) || previousMode.current !== s.mode)
-      setCaptureStop((v) => v + 1);
-    previousActive.current = s.active;
-    previousMode.current = s.mode;
-  }, [s.active, s.mode]);
+    if (call.status !== "connected") return;
+    const started = Date.now();
+    const t = setInterval(() => setElapsed((Date.now() - started) / 1000), 500);
+    return () => clearInterval(t);
+  }, [call.status]);
+  useEffect(() => () => clearTimeout(speakTimer.current), []);
+  // Captions are ephemeral: clear when a call ends.
   useEffect(() => {
-    const el = captionRef.current;
-    if (el) el.scrollTop = el.scrollHeight;
-  }, [s.messages.length, s.interim]);
-  const last = [...s.messages].reverse().find((m) => m.from === "companion");
+    if (call.status === "closed") setLines([]);
+  }, [call.status]);
+  // Account switch or sign-out ends any call and drops captions.
+  const userId = user?.id ?? null;
+  const stopCall = call.stop;
+  useEffect(() => {
+    return () => {
+      stopCall();
+      setLines([]);
+    };
+  }, [userId, stopCall]);
+  useEffect(() => {
+    if (call.audioRef.current) call.audioRef.current.muted = !speaker;
+  }, [speaker, call.audioRef]);
+
+  const parsed = callContextSchema.safeParse(toCallContext(form));
+  const start = () => {
+    setSetupError(null);
+    if (!parsed.success) {
+      setSetupError(
+        [form.roleplayAck, form.audioConsent, form.ageAck].every(Boolean)
+          ? (parsed.error.issues[0]?.message ?? "Review the call setup.")
+          : "Tick the three boxes in the setup to start the call.",
+      );
+      const box = document.querySelector<HTMLInputElement>(
+        ".call-consent input:not(:checked), .call-prep input:invalid",
+      );
+      box?.scrollIntoView?.({ block: "center", behavior: "smooth" });
+      box?.focus({ preventScroll: true });
+      return;
+    }
+    setLines([]);
+    setElapsed(0);
+    setCaptureStop((v) => v + 1);
+    const context = parsed.data;
+    call.start(async () => {
+      if (!user) return { token: "", context }; // signed-out demo call, server-capped
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) throw new Error("Sign in again to start a live call.");
+      return { token, context };
+    });
+  };
   const openSOS = () => {
-    controller.current?.interrupt();
     setCaptureStop((v) => v + 1);
     setSos(true);
   };
-  const action = (action: PresenceAction) => {
-    if (action === "sos") openSOS();
-    if (action === "recording") {
-      controller.current?.interrupt();
-      setDeskSignal((v) => v + 1);
-      document
-        .getElementById("presence-desk")
-        ?.scrollIntoView({ behavior: "instant", block: "start" });
-    }
-  };
+  const set = <K extends keyof typeof blank>(k: K, v: (typeof blank)[K]) =>
+    setForm((f) => ({ ...f, [k]: v }));
+  const state = !live
+    ? "idle"
+    : call.status === "connecting"
+      ? "ringing"
+      : call.status === "stopping"
+        ? "ending"
+        : speaking
+          ? "speaking"
+          : "listening";
+  const statusText = {
+    idle: call.status === "closed" ? "Call ended" : "Ready when you are",
+    ringing: "Calling…",
+    ending: "Hanging up…",
+    speaking: `${form.alias} is talking`,
+    listening: call.muted ? "You’re muted" : "On the line",
+  }[state];
+
   return (
-    <div className="night-room" data-still={still || reduced || !visible || !inView} data-dim={dim}>
+    <div className="night-room call-room" data-call={state}>
       <nav className="room-support-nav" aria-label="Private support">
         <Link to="/trip">
           Journey <ArrowUpRight size={15} />
@@ -113,399 +232,334 @@ export function PresenceRoom() {
           <ShieldAlert size={18} /> SOS
         </Button>
       </nav>
-      <header className="night-heading">
-        <div>
-          <p className="night-eyebrow">Cocoon Presence / the listening room</p>
-          <h1>
-            YOUR NIGHT.
-            <br />
-            <em>A LITTLE LIGHT.</em>
-          </h1>
+
+      <section className="call-stage" aria-label="Live call">
+        <div className="call-ambient" aria-hidden="true">
+          <span />
+          <span />
+          <span />
         </div>
-        <div className="night-heading-side">
-          <p>
-            No perfect words needed.
-            <br />
-            Stay for a moment, or a next step.
+        <CallScenery />
+        <p className="call-badge">
+          <i /> AI voice · pretend call you set up
+        </p>
+        <div className="call-contact">
+          <CallCharacter
+            state={
+              state === "ringing"
+                ? "ringing"
+                : state === "ending"
+                  ? "ending"
+                  : state === "speaking"
+                    ? "speaking"
+                    : state === "listening"
+                      ? call.muted
+                        ? "muted"
+                        : "listening"
+                      : "idle"
+            }
+            audioRef={call.audioRef}
+            name={form.alias.trim()}
+          />
+          <WaveText as="h1" text={form.alias.trim() || "Your caller"} />
+          <p className="call-relation">
+            {RELATIONSHIPS[form.relationship]} ·{" "}
+            {form.mode === "pretend" ? "expecting you" : "keeping you company"}
+          </p>
+          <p className="call-status" role="status">
+            {statusText}
+            {call.status === "connected" && (
+              <span>
+                {" "}
+                · {clock(elapsed)} / {clock(user ? CALL_LIMIT_SECONDS : GUEST_CALL_LIMIT_SECONDS)}
+              </span>
+            )}
           </p>
         </div>
-      </header>
-      <section
-        className="listening-room"
-        ref={scene}
-        aria-label="Night listening room"
-        data-phase={s.phase}
-      >
-        <div className="room-architecture" aria-hidden="true">
-          <svg viewBox="0 0 1200 760" preserveAspectRatio="xMidYMid slice">
-            <path
-              className="room-window"
-              d="M80 530V190q0-100 115-100t115 100v340Zm710 0V190q0-100 115-100t115 100v340Z"
-            />
-            <path
-              className="room-tracery"
-              d="M195 90v440M80 275h230M905 90v440m-115-255h230M0 600q600-75 1200 0M0 635q600-40 1200 0M0 670h1200"
-            />
-            <path
-              className="room-skyline"
-              d="M80 470h35v-80h35v45h40v-70h50v95h70m480 10h40v-55h40v-85h45v113h40v-60h65"
-            />
-            <path
-              className="room-curtain"
-              d="M38 0q50 230 12 575M354 0q-60 230-13 575M745 0q50 230 12 575M1065 0q-60 230-13 575"
-            />
-            <path
-              className="room-stars"
-              d="M131 216h9m-4-4v8m92-63h9m-4-4v8m634 82h9m-4-4v8m91-95h9m-4-4v8"
-            />
-            <path className="room-table" d="M370 691h460m-390 0-30 69m380-69 30 69" />
-          </svg>
-        </div>
-        <div className="room-topline">
-          <span>
-            <i /> {s.mode === "text" ? "Text companion" : "Browser speech"} · scripted
-          </span>
-          <div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setDim(!dim)}
-              aria-label={dim ? "Brighten the room" : "Dim the room"}
-              aria-pressed={dim}
-              title="Room light"
-            >
-              <Sparkles size={18} />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setStill(!still)}
-              disabled={reduced}
-              aria-label={
-                reduced
-                  ? "Reduced motion enabled"
-                  : still
-                    ? "Resume scene motion"
-                    : "Pause scene motion"
-              }
-              aria-pressed={still || reduced}
-              title="Scene motion"
-            >
-              {still || reduced ? <Play size={18} /> : <Pause size={18} />}
-            </Button>
+
+        {live && captions && (
+          <div className="call-captions" aria-live="polite" aria-label="Live captions">
+            {lines.length === 0 ? (
+              <p className="call-caption-empty">Captions appear here. Not saved.</p>
+            ) : (
+              lines.map((l) => (
+                <p key={l.id} data-who={l.who}>
+                  <b>{l.who === "you" ? "You" : form.alias}</b> {l.text}
+                </p>
+              ))
+            )}
           </div>
-        </div>
-        <div className="room-center">
-          <PresenceBuddy phase={s.phase} onInterrupt={() => controller.current?.interrupt()} />
-          <p className="room-status" role="status">
-            <span className="room-status-dot" />
-            {labels[s.phase]}
+        )}
+
+        {call.error && (
+          <p className="call-error" role="alert">
+            {call.error}
           </p>
-          <div className="room-caption" aria-live="polite">
-            {s.interim ? (
-              <p>“{s.interim}”</p>
-            ) : (
-              <p>
-                {last?.text ??
-                  "A little company. A moment to ground yourself. One next step. What would help tonight?"}
-              </p>
-            )}
-          </div>
+        )}
+        {call.playbackBlocked && (
+          <Button variant="outline" onClick={call.resumePlayback}>
+            <Volume2 size={18} /> Tap to hear {form.alias}
+          </Button>
+        )}
+
+        <div className="call-controls">
+          {live ? (
+            <>
+              <button
+                type="button"
+                className="call-btn"
+                aria-pressed={call.muted}
+                onClick={() => call.setMuted(!call.muted)}
+                disabled={call.status !== "connected"}
+              >
+                {call.muted ? <MicOff /> : <Mic />}
+                <span>{call.muted ? "Unmute" : "Mute"}</span>
+              </button>
+              <button
+                type="button"
+                className="call-btn"
+                aria-pressed={!speaker}
+                onClick={() => setSpeaker(!speaker)}
+              >
+                {speaker ? <Volume2 /> : <VolumeX />}
+                <span>{speaker ? "Sound on" : "Sound off"}</span>
+              </button>
+              <button
+                type="button"
+                className="call-btn"
+                aria-pressed={captions}
+                onClick={() => setCaptions(!captions)}
+              >
+                {captions ? <Captions /> : <CaptionsOff />}
+                <span>Captions</span>
+              </button>
+              <button
+                type="button"
+                className="call-btn call-end"
+                onClick={call.stop}
+                disabled={call.status === "stopping"}
+              >
+                <PhoneOff />
+                <span>End call</span>
+              </button>
+            </>
+          ) : ready ? (
+            <button
+              type="button"
+              className="call-btn call-start"
+              onClick={start}
+              aria-describedby={parsed.success ? undefined : "call-start-hint"}
+            >
+              <Phone />
+              <span>{user ? "Start call" : "Try a demo call"}</span>
+            </button>
+          ) : null}
         </div>
-        <div className="room-console">
-          <div className="room-mode" aria-label="Conversation mode">
-            <Button
-              variant="ghost"
-              aria-pressed={s.mode === "text"}
-              onClick={() => controller.current?.setMode("text")}
-            >
-              <MessageCircle size={16} /> Text first
-            </Button>
-            <Button
-              variant="ghost"
-              aria-pressed={s.mode === "voice"}
-              onClick={() => controller.current?.setMode("voice")}
-            >
-              <Volume2 size={16} /> Browser voice
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSettings(!settings)}
-              aria-label="Voice settings"
-              aria-expanded={settings}
-              title="Voice settings"
-            >
-              <Settings2 size={18} />
-            </Button>
-          </div>
-          <div className="room-call-controls">
-            {!s.active ? (
-              <Button onClick={() => controller.current?.start()}>
-                Begin {s.mode === "text" ? "text session" : "browser session"}
-              </Button>
-            ) : (
-              <>
-                {s.mode === "voice" && (
-                  <Button
-                    variant="outline"
-                    onClick={() =>
-                      s.phase === "listening" || s.phase === "connecting"
-                        ? controller.current?.interrupt()
-                        : controller.current?.listen()
-                    }
-                    title="Listening is one explicit turn"
-                  >
-                    <>
-                      {s.phase === "listening" ? <MicOff size={18} /> : <Mic size={18} />}{" "}
-                      {s.phase === "listening" || s.phase === "connecting"
-                        ? "Stop listening / playback"
-                        : "Listen once"}
-                    </>
-                  </Button>
-                )}
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => controller.current?.interrupt()}
-                  disabled={!["speaking", "thinking", "connecting", "listening"].includes(s.phase)}
-                  aria-label="Stop speaking or pending turn"
-                  title="Stop speaking or pending turn"
-                >
-                  <Square size={18} />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => controller.current?.repeat()}
-                  disabled={!last || !s.speechSupported}
-                  aria-label="Repeat last reply"
-                  title="Repeat last reply"
-                >
-                  <RotateCcw size={18} />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="icon"
-                  onClick={() => controller.current?.setSpeaker(!s.speaker)}
-                  aria-pressed={s.speaker}
-                  disabled={!s.speechSupported}
-                  aria-label={s.speaker ? "Mute browser playback" : "Enable browser playback"}
-                  title="Browser playback"
-                >
-                  {s.speaker ? <Volume2 size={18} /> : <VolumeX size={18} />}
-                </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => {
-                    controller.current?.end();
-                    setInput("");
-                  }}
-                >
-                  <PhoneOff size={18} /> End
-                </Button>
-              </>
-            )}
-          </div>
-          {s.notice && (
-            <p className="room-notice" role={s.phase === "error" ? "alert" : "status"}>
-              {s.notice}
+        {!live && ready && (setupError || !parsed.success) && (
+          <p
+            id="call-start-hint"
+            className="call-start-hint"
+            data-alert={setupError ? "true" : undefined}
+            role={setupError ? "alert" : undefined}
+          >
+            {setupError ?? "Tick the three boxes in the setup to start."}
+          </p>
+        )}
+        {/* Always mounted so the controller can attach remote audio before the call starts. */}
+        <audio ref={call.audioRef} className="sr-only" aria-label="Call audio" />
+
+        {!live && ready && !user && (
+          <div className="call-unavailable call-guest" role="status">
+            <strong>Demo call · real AI voice, 2 minutes, no sign-in</strong>
+            <p>
+              Demo calls use network-based (IP-based) limits; shared networks may share a limit.{" "}
+              <Link to="/account">Sign in ↗</Link> for 5-minute calls.
             </p>
-          )}
-          {s.mode === "voice" && !s.recognitionSupported && hydrated && (
-            <p className="room-notice">
-              Recognition unavailable here. Type instead; browser playback may still be available.
-            </p>
-          )}
-          {settings && (
-            <div className="room-settings">
+          </div>
+        )}
+        {!live && call.error && <TrustedDialer contacts={contacts} />}
+      </section>
+
+      {!live && (
+        <section className="call-prep" aria-label="Call setup">
+          <div className="call-prep-head">
+            <p className="night-eyebrow">Before you call</p>
+            <h2>Who’s picking up?</h2>
+          </div>
+          <div className="call-mode" role="radiogroup" aria-label="Call type">
+            {(
+              [
+                [
+                  "pretend",
+                  "Pretend familiar call",
+                  "They’re expecting you. Good for a tense ride.",
+                ],
+                ["company", "Normal company", "A friendly voice to talk to."],
+              ] as const
+            ).map(([v, title, hint]) => (
+              <button
+                key={v}
+                type="button"
+                role="radio"
+                aria-checked={form.mode === v}
+                onClick={() => set("mode", v)}
+              >
+                <strong>{title}</strong>
+                <span>{hint}</span>
+              </button>
+            ))}
+          </div>
+          <div className="call-fields">
+            <label>
+              Name they’ll use
+              <input
+                value={form.alias}
+                maxLength={24}
+                onChange={(e) => set("alias", e.target.value)}
+              />
+            </label>
+            <label>
+              They are your
+              <select
+                value={form.relationship}
+                onChange={(e) => set("relationship", e.target.value as typeof form.relationship)}
+              >
+                {Object.entries(RELATIONSHIPS).map(([k, v]) => (
+                  <option key={k} value={k}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Voice
+              <select
+                value={form.voice}
+                onChange={(e) => set("voice", e.target.value as typeof form.voice)}
+              >
+                {Object.entries(VOICES).map(([k, v]) => (
+                  <option key={k} value={k}>
+                    {v}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Language
+              <select
+                value={form.language}
+                onChange={(e) => set("language", e.target.value as typeof form.language)}
+              >
+                <option value="en">English</option>
+                <option value="hinglish">Hinglish</option>
+              </select>
+            </label>
+          </div>
+          <details className="call-optional">
+            <summary>Optional: ride, arrival & safe word</summary>
+            <div className="call-fields">
               <label>
-                Browser voice
+                Getting there by
                 <select
-                  value={s.voiceId}
-                  disabled={!s.speechSupported}
-                  onChange={(e) => controller.current?.setVoice(e.target.value)}
+                  value={form.ride}
+                  onChange={(e) => set("ride", e.target.value as typeof form.ride)}
                 >
-                  <option value="">Device default</option>
-                  {s.voices.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.name} · {v.lang}
-                      {v.local ? " · local voice" : " · browser service"}
+                  <option value="">Don’t say</option>
+                  {Object.entries(RIDES).map(([k, v]) => (
+                    <option key={k} value={k}>
+                      {v}
                     </option>
                   ))}
                 </select>
               </label>
               <label>
-                Speaking rate · {s.rate.toFixed(1)}×
+                Heading to (general place)
                 <input
-                  type="range"
-                  min="0.7"
-                  max="1.3"
-                  step="0.1"
-                  value={s.rate}
-                  disabled={!s.speechSupported}
-                  onChange={(e) => controller.current?.setRate(Number(e.target.value))}
+                  value={form.arrival}
+                  maxLength={80}
+                  placeholder="e.g. hostel gate"
+                  onChange={(e) => set("arrival", e.target.value)}
                 />
               </label>
-              <p>
-                {s.speechSupported
-                  ? s.voices.length
-                    ? "Changing voice or rate stops current playback. Repeat only when you choose."
-                    : "No named voices reported yet. Device default may be available."
-                  : "Speech playback is unavailable. Full text companion remains usable."}
-              </p>
+              <label>
+                About how many minutes
+                <input
+                  type="number"
+                  min={1}
+                  max={180}
+                  value={form.eta}
+                  onChange={(e) => set("eta", e.target.value)}
+                />
+              </label>
+              <label>
+                Safe word
+                <input
+                  value={form.safeWord}
+                  maxLength={24}
+                  placeholder="e.g. mango"
+                  onChange={(e) => set("safeWord", e.target.value)}
+                />
+              </label>
             </div>
-          )}
-        </div>
-      </section>
-      <section className="room-conversation" aria-label="Guided conversation">
-        <div className="intent-rail">
-          <p className="night-eyebrow">What would help right now?</p>
-          <div>
-            {(Object.keys(INTENTS) as PresenceIntent[]).map((intent) => {
-              const Icon = intentIcons[intent];
-              return (
-                <Button
-                  key={intent}
-                  variant="ghost"
-                  aria-pressed={s.intent === intent}
-                  onClick={() => controller.current?.setIntent(intent)}
-                >
-                  <Icon size={20} />
-                  <span>{INTENTS[intent].label}</span>
-                  <ArrowUpRight size={17} />
-                </Button>
-              );
-            })}
-          </div>
-          <p className="room-local-note">
-            This session stays on this page. No private account reads or automatic messages.
-          </p>
-        </div>
-        <div className="room-dialogue">
-          <div className="transcript-heading">
-            <h2>In your own words.</h2>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                controller.current?.clear();
-                setInput("");
-                setCaptureStop((v) => v + 1);
-              }}
-            >
-              Clear session
-            </Button>
-          </div>
-          <div
-            className="room-transcript"
-            ref={captionRef}
-            role="log"
-            aria-label="Session transcript"
-            aria-live="polite"
-          >
-            {s.messages.length === 0 ? (
-              <p className="transcript-empty">
-                Choose an intention or type a message. No microphone needed.
-              </p>
-            ) : (
-              s.messages.map((m) => (
-                <div className="room-turn" data-from={m.from} key={m.id}>
-                  <span>{m.from === "you" ? "You" : "Cocoon · scripted"}</span>
-                  <p>{m.text}</p>
-                  {m.actions && (
-                    <div className="room-reply-actions">
-                      {m.actions.map((a) =>
-                        a === "journey" ? (
-                          <Link key={a} to="/trip">
-                            Open Journey ↗
-                          </Link>
-                        ) : a === "kit" ? (
-                          <Link key={a} to="/kit">
-                            Safety Kit ↗
-                          </Link>
-                        ) : (
-                          <Button variant="outline" size="sm" key={a} onClick={() => action(a)}>
-                            {a === "sos" ? "Review SOS options" : "Recording & sharing"}
-                          </Button>
-                        ),
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-          <form
-            className="room-compose"
-            onSubmit={(e) => {
-              e.preventDefault();
-              const text = input;
-              setInput("");
-              void controller.current?.send(text);
-            }}
-          >
-            <label className="sr-only" htmlFor="presence-message">
-              Your message
+            <small>
+              Avoid exact addresses. If you say the safe word, the voice only reminds you of the SOS
+              button — it can’t alert anyone.
+            </small>
+          </details>
+          <div className="call-consent">
+            <label>
+              <input
+                type="checkbox"
+                checked={form.roleplayAck}
+                onChange={(e) => set("roleplayAck", e.target.checked)}
+              />
+              I understand this is an AI voice playing a pretend role. It can’t see me, track me,
+              come to me or contact anyone.
             </label>
-            <textarea
-              id="presence-message"
-              rows={2}
-              value={input}
-              maxLength={1000}
-              placeholder="What’s on your mind?"
-              onChange={(e) => setInput(e.target.value)}
-            />
-            <Button
-              type="submit"
-              size="icon"
-              disabled={!input.trim()}
-              aria-label="Send message"
-              title="Send message"
-            >
-              <Send size={20} />
-            </Button>
-          </form>
-          {s.phase === "ended" && s.messages.length > 0 && (
-            <section className="room-summary" aria-label="Ephemeral session summary">
-              <p className="night-eyebrow">Taking with you</p>
-              <h3>{INTENTS[s.intent].label}</h3>
-              <p>{INTENTS[s.intent].reminder}</p>
-              <div>
-                <Link to="/trip">Review Journey ↗</Link>
-                <Link to="/account">Your guardian connections ↗</Link>
-              </div>
-              <small>
-                Only your chosen intention and preset reminder. No transcript saved or shared;
-                leaving clears this session.
-              </small>
-            </section>
-          )}
-        </div>
-      </section>
-      <details className="room-boundaries">
-        <summary>About browser speech & privacy</summary>
-        <p>
-          Written, rule-based replies — not natural AI, a person, crisis care or a phone line.
-          Microphone listening is one explicit turn and never resumes automatically. Your browser’s
-          recognition or non-local voice service may process audio online. Text mode needs no
-          microphone. Nothing reads private journeys, sends alerts, diagnoses you or guarantees
-          safety. Conversation stays in memory until you leave or clear it.
-        </p>
-        <p>
-          Natural AI voice remains unavailable under the zero-payment and provider-privacy
-          restrictions. OpenAI, Twilio and Gemini remain OFF; no account or key is requested.
-        </p>
+            <label>
+              <input
+                type="checkbox"
+                checked={form.audioConsent}
+                onChange={(e) => set("audioConsent", e.target.checked)}
+              />
+              Send my microphone audio and the details above through Lovable’s AI service to its
+              voice provider (OpenAI GPT-Live) for this call. Cocoon doesn’t save audio or
+              transcripts; Lovable’s and the provider’s own retention policies apply. Captions stay
+              only on this screen until the call ends.
+            </label>
+            <label>
+              <input
+                type="checkbox"
+                checked={form.ageAck}
+                onChange={(e) => set("ageAck", e.target.checked)}
+              />
+              I’m 18 or older, or a parent/guardian has said I can use AI voice services.
+            </label>
+          </div>
+          <p className="call-fine">
+            Up to {limits.seconds / 60} minutes per call, {limits.hourly} calls an hour,{" "}
+            {limits.daily} a day.
+            {!user &&
+              " Network-based limits; shared networks may share the limit. Global availability caps also apply."}{" "}
+            Uses this app’s Lovable AI credits; never billed to you.
+          </p>
+        </section>
+      )}
+
+      <details className="call-demo">
+        <summary>Scripted browser demo (not AI, no live voice)</summary>
+        <ScriptedPresenceDemo onSos={openSOS} />
       </details>
+
       <div id="presence-desk">
-        <SupportWorkspace stopSignal={captureStop} openSignal={deskSignal} />
+        <SupportWorkspace stopSignal={captureStop} openSignal={0} />
       </div>
       <Dialog open={sos} onOpenChange={setSos}>
         <DialogContent className="room-sos-dialog max-h-[85dvh] overflow-y-auto">
           <DialogTitle>SOS · your explicit choices</DialogTitle>
           <DialogDescription>
             Private in-app guardian alerts and the local demo are separate. No authority dispatch or
-            background delivery.
+            background delivery. The AI call cannot send alerts.
           </DialogDescription>
           <div id="sos-zone">
             <SosButton compact />
@@ -513,5 +567,63 @@ export function PresenceRoom() {
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+/** Layered night town behind the call: drifting clouds, twinkling windows, swaying trees. */
+function CallScenery() {
+  return (
+    <svg
+      className="call-scenery"
+      viewBox="0 0 1200 600"
+      preserveAspectRatio="xMidYMax slice"
+      aria-hidden="true"
+    >
+      <g className="cs-cloud cs-cloud-a">
+        <ellipse cx="200" cy="120" rx="90" ry="18" />
+        <ellipse cx="250" cy="108" rx="50" ry="16" />
+      </g>
+      <g className="cs-cloud cs-cloud-b">
+        <ellipse cx="900" cy="80" rx="110" ry="16" />
+        <ellipse cx="860" cy="70" rx="46" ry="14" />
+      </g>
+      <path className="cs-hill-far" d="M0 470q200-90 400-30t400-40 400 30v170H0z" />
+      <g className="cs-town">
+        {[60, 130, 190, 980, 1050, 1120].map((x, i) => (
+          <g key={x}>
+            <rect x={x} y={400 - (i % 3) * 40} width="54" height={200 + (i % 3) * 40} />
+            <rect
+              className="cs-win"
+              style={{ animationDelay: `${i * 0.9}s` }}
+              x={x + 14}
+              y={430 - (i % 3) * 40}
+              width="9"
+              height="11"
+            />
+            <rect
+              className="cs-win"
+              style={{ animationDelay: `${i * 1.3 + 0.5}s` }}
+              x={x + 31}
+              y={460 - (i % 3) * 40}
+              width="9"
+              height="11"
+            />
+          </g>
+        ))}
+      </g>
+      <g className="cs-trees">
+        {[20, 260, 330, 860, 930, 1170].map((x, i) => (
+          <g
+            key={x}
+            className="cs-tree"
+            style={{ animationDelay: `${i * 0.4}s`, transformOrigin: `${x}px 600px` }}
+          >
+            <rect x={x - 3} y="520" width="6" height="80" />
+            <path d={`M${x} ${430 + (i % 2) * 30}l34 100h-68z`} />
+          </g>
+        ))}
+      </g>
+      <path className="cs-hill-near" d="M0 540q300-50 600-10t600-20v90H0z" />
+    </svg>
   );
 }

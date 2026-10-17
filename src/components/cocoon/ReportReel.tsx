@@ -8,6 +8,7 @@ import {
   MapPin,
   MessageCircle,
   Sparkles,
+  RotateCcw,
 } from "lucide-react";
 import type { SafetyReport } from "@/lib/cocoon/types";
 import { CATEGORY_LABEL, ReportCard } from "./ui";
@@ -76,11 +77,11 @@ export function ReportReel({ reports }: { reports: SafetyReport[] }) {
       </div>
       <button
         className="report-rearrange"
+        aria-label="Gather the signals again"
         onClick={() => setReplay((n) => n + 1)}
         disabled={!!reduced}
       >
-        {" "}
-        {reduced ? "Still layout · reduced motion" : "Gather the signals ↗"}
+        <RotateCcw size={15} />
       </button>
       {!report ? (
         <p className="reel-empty">No visible reports in this category.</p>

@@ -1,5 +1,13 @@
 # Production voice and SOS
 
+## Submission-readiness audit (design frozen)
+- [x] Final readiness patch: exact Kit/Reports disclosures and hydration-gated RoomAtmosphere; 28 relevant tests pass, targeted lint passes with preserved line endings, automatic build OK. Browser confirms RoomAtmosphere mismatch gone and reduced preference applied; unrelated reduced-motion Reports warnings remain outside requested scope. Separate typecheck evidence unavailable. No calls, publishing or submission.
+- [x] Fail closed on guest pause lookup; correct IP-based and role-specific quota disclosures.
+- [x] Repair root-to-Presence transition settling without changing visual design; timer fallback, duplicate-request guard, hung/stale cleanup and reduced-motion coverage.
+- [x] Add synthetic rollback guest SQL and relay lifecycle regressions; 355 tests across 50 files pass; targeted lint has 0 errors (1 existing fast-refresh warning); automatic compilation reports build OK.
+- [x] Add docs/JUDGE-TESTING.md; report revision, verification limits and credits. No publishing or submission; real audio and real-account flows remain deliberately untested.
+- Verification boundary: fresh desktop/mobile entry → Presence and opening the labelled script pass with no navigation errors or overflow; reduced-motion navigation also settles but logs an existing RoomAtmosphere hydration warning. No voice socket or permission was requested. Automatic build reports OK; a separate typecheck result is not exposed, and manual builds/typechecks are prohibited by the environment.
+
 - [x] Upgrade Presence browser/text lifecycle, guided scripts and immersive state-reactive night room; preserve private workflows, manual recording/share and paid locks. Text-first, explicit one-turn mic, interruption/repeat, voices/rate and ephemeral summary are implemented without private reads or automatic actions.
 - [x] Verify permission/unsupported/late events/interruption/hidden lifecycle: 287 tests across 42 files pass (32 new Presence cases), changed application lint and automatic typecheck/build pass. Desktop 1280×1800/mobile 390×844/reduced-motion text → guidance → Journey → summary, SOS review and manual recorder choices pass without page errors/overflow/OAuth/provider requests. Documentation: docs/PRESENCE-ROOM.md; natural AI and real-device verification remain intentionally unavailable, no publishing.
 
@@ -37,3 +45,10 @@
 - [ ] Closed-tab dispatch and server voice termination — blocked by disabled providers and unavailable verified durable scheduling.
 - [ ] Provider delivery and audible verification — intentionally blocked; no real sends/calls/media tests authorized.
 - [x] Document exact prerequisites in src/lib/production/PRODUCTION.md; no publishing or paid provisioning.
+
+- [x] Fix Presence call button (clickable start, laptop-fit layout)
+- [ ] Future: call gathers info and sends to guardians (needs consent design)
+- [x] Together: two-way timed location sharing (demo on Journey)
+- [x] Circle: fix left padding on text
+- [x] Circle: demo content per community room (body, boundaries, campus, feelings)
+- [x] Post animation: red splash when posting (Circle + Reports)

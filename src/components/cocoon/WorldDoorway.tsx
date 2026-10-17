@@ -1,9 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { motion, useReducedMotion } from "motion/react";
+import { X } from "lucide-react";
 import { toast } from "sonner";
 import { WORLD_ENTRANCE, type WorldEntrance } from "@/lib/cocoon/world-navigation";
 import { NightAtlasScene } from "./NightAtlasScene";
+import { WaveText } from "./WaveText";
+import { Button } from "@/components/ui/button";
 const placeNames: Record<string, string> = {
   "/": "Home",
   "/explore": "Routes",
@@ -36,8 +39,9 @@ export function WorldDoorway() {
   useEffect(() => {
     const enter = (event: Event) => {
       const detail = (event as CustomEvent<WorldEntrance>).detail;
-      if (!detail || !destinations.has(detail.to) || active.current !== null || reduce) return;
+      if (!detail || !destinations.has(detail.to) || reduce) return;
       detail.handled = true;
+      if (active.current !== null) return;
       const id = ++counter.current;
       active.current = id;
       navigating.current = false;
@@ -55,17 +59,13 @@ export function WorldDoorway() {
     },
     [],
   );
-  useEffect(() => {
-    if (!request) return;
-    const timer = window.setTimeout(() => {
-      if (active.current === request.id) setPhase("open");
-    }, 5000);
-    return () => window.clearTimeout(timer);
-  }, [request]);
-  if (!request) return null;
-  const origin = `${request.x ?? 65}% ${request.y ?? 60}%`;
-  const go = async () => {
-    if (navigating.current || active.current !== request.id) return;
+  const dismiss = useCallback((id: number) => {
+    if (active.current !== id) return;
+    active.current = null;
+    setRequest(null);
+  }, []);
+  const go = useCallback(async () => {
+    if (!request || navigating.current || active.current !== request.id) return;
     navigating.current = true;
     try {
       await navigate({
@@ -79,7 +79,27 @@ export function WorldDoorway() {
     } finally {
       if (active.current === request.id) setPhase("open");
     }
-  };
+  }, [navigate, request]);
+  useEffect(() => {
+    if (!request || phase !== "cover") return;
+    // Animation callbacks are optional: interrupted/hidden WebViews still navigate once.
+    const timer = window.setTimeout(() => void go(), reduce ? 0 : 550);
+    // A hung router promise must not leave the page covered or intercept future links.
+    const watchdog = window.setTimeout(() => {
+      if (active.current === request.id) setPhase("open");
+    }, 5000);
+    return () => {
+      window.clearTimeout(timer);
+      window.clearTimeout(watchdog);
+    };
+  }, [request, phase, reduce, go]);
+  useEffect(() => {
+    if (!request || phase !== "open") return;
+    const timer = window.setTimeout(() => dismiss(request.id), reduce ? 0 : 550);
+    return () => window.clearTimeout(timer);
+  }, [request, phase, reduce, dismiss]);
+  if (!request) return null;
+  const origin = `${request.x ?? 65}% ${request.y ?? 60}%`;
   return (
     <div
       className="world-doorway-host"
@@ -87,7 +107,6 @@ export function WorldDoorway() {
         if (event.key === "Tab") event.preventDefault();
         if (event.key === "Escape") {
           void go();
-          setPhase("open");
         }
       }}
     >
@@ -106,30 +125,37 @@ export function WorldDoorway() {
         onAnimationComplete={() => {
           if (phase === "cover") void go();
           else {
-            active.current = null;
-            setRequest(null);
+            dismiss(request.id);
           }
         }}
       >
-        <div className="world-doorway-art" aria-hidden="true">
+        <motion.div
+          className="world-doorway-art"
+          aria-hidden="true"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 0.8 }}
+          transition={{ delay: reduce ? 0 : 0.18, duration: reduce ? 0 : 0.35 }}
+        >
           <NightAtlasScene
             scene={request.to === "/circle" ? 2 : ["/learn", "/kit"].includes(request.to) ? 1 : 0}
           />
-        </div>
+        </motion.div>
         <div className="world-doorway-label" role="status">
           <span>COCOON / A LITTLE FURTHER</span>
-          <p>{request.label}</p>
+          <WaveText as="p" text={request.label} />
         </div>
       </motion.div>
-      <button
-        autoFocus
-        onClick={() => {
-          void go();
-          setPhase("open");
-        }}
-      >
-        Skip animation ↗
-      </button>
+      {phase === "cover" && (
+        <Button
+          autoFocus
+          aria-label="Skip this transition"
+          onClick={() => {
+            void go();
+          }}
+        >
+          <X size={18} />
+        </Button>
+      )}
     </div>
   );
 }

@@ -12,6 +12,7 @@ import {
   useSpring,
   useTransform,
 } from "motion/react";
+import { Pause, Play } from "lucide-react";
 
 export function FlashlightThreshold({ opened }: { opened: boolean }) {
   const mobile = useIsMobile();
@@ -334,11 +335,12 @@ export function FlashlightThreshold({ opened }: { opened: boolean }) {
         </p>
         <small>Move the pointer or scroll · the light also explores on its own</small>
         <button
-          onClick={() => setStill(!still)}
+          aria-label={still ? "Restore the moving light" : "Hold the light still"}
           aria-pressed={still || !!reduced}
           disabled={!!reduced}
+          onClick={() => setStill(!still)}
         >
-          {reduced ? "Reduced motion is on" : still ? "Restore moving light" : "Use a still scene"}
+          {still ? <Play size={14} /> : <Pause size={14} />}
         </button>
       </div>
     </>

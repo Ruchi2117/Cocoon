@@ -1,4 +1,5 @@
 import { BalancedColumns } from "@/components/cocoon/BalancedColumns";
+import { RouteWalkStrip } from "@/components/cocoon/RouteWalkStrip";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { motion } from "motion/react";
@@ -208,8 +209,9 @@ function Explore() {
         Walking routes come from OpenStreetMap community routing when available. They show the path
         — Cocoon never rates a route as "safe". Check the reports along each one.
       </PageHeader>
+      <RouteWalkStrip to={dest.label} />
       <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
-        {DESTINATIONS.map((d) => (
+        {DESTINATIONS.map((d, i) => (
           <button
             key={d.id}
             onClick={() => {
@@ -217,8 +219,9 @@ function Explore() {
               setDest({ label: d.label, at: d.at });
               nav({ to: "/explore", search: { to: d.id }, replace: true });
             }}
+            style={{ animationDelay: `${i * 70}ms` }}
             className={cn(
-              "whitespace-nowrap rounded-full border px-3 py-1.5 text-sm transition",
+              "rws-chip whitespace-nowrap rounded-full border px-3 py-1.5 text-sm transition",
               d.label === dest.label
                 ? "bg-primary text-primary-foreground"
                 : "bg-card hover:bg-accent",

@@ -1,4 +1,5 @@
 import { SafetyNews } from "@/components/cocoon/SafetyNews";
+import { SignalWheel } from "@/components/cocoon/SignalWheel";
 import { ReportReel } from "@/components/cocoon/ReportReel";
 import { ReportType } from "@/components/cocoon/ReportType";
 import { createFileRoute } from "@tanstack/react-router";
@@ -6,9 +7,11 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { MapView } from "@/components/cocoon/MapView";
+import { ScrollWords } from "@/components/cocoon/WaveText";
 import { CATEGORY_LABEL, PageHeader, ReportCard, SOURCE_LABEL } from "@/components/cocoon/ui";
 import { useDemoState } from "@/lib/cocoon/store";
 import { publicReports } from "@/lib/cocoon/access";
+import { inkSplash } from "@/lib/cocoon/splash";
 import { flagReport, submitReport } from "@/lib/cocoon/actions";
 import type { LatLng, ReportCategory, SourceType } from "@/lib/cocoon/types";
 import { validPoint } from "@/lib/cocoon/geometry";
@@ -24,6 +27,8 @@ export const Route = createFileRoute("/reports")({
       },
       { property: "og:title", content: "Community safety reports · Cocoon" },
       { property: "og:description", content: "Transparent, moderated safety intelligence." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Reports,
@@ -68,6 +73,7 @@ function Reports() {
       setForm({ ...form, description: "", locationLabel: "", eventDate: "" });
       setPin(null);
       setErr(null);
+      inkSplash((e.nativeEvent as SubmitEvent).submitter ?? e.currentTarget);
       toast.success("Report published as unverified. Your identity is not shown publicly.");
     } catch (x) {
       setErr((x as Error).message);
@@ -82,6 +88,10 @@ function Reports() {
         and external sources with attribution. Unverified reports are not confirmed crimes. Seeded
         items are demonstration data.
       </PageHeader>
+      <ScrollWords
+        text="Every report is something a person chose to share. Read with care: unverified is not confirmed, and a pattern is not a promise."
+        accent={["care", "unverified", "pattern"]}
+      />
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
         <div>
           <div className="mb-3 flex flex-wrap gap-2" role="tablist">
@@ -263,10 +273,12 @@ function Reports() {
             Publish report
           </Button>
           <p className="text-xs text-muted-foreground">
-            Published as unverified. Your identity stays private.
+            Saved as an unverified local demo report in this browser. Not published to other users;
+            do not enter identifying or sensitive information.
           </p>
         </form>
       </div>
+      <SignalWheel />
       <SafetyNews />
     </div>
   );

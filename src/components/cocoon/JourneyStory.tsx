@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { ArrowUpRight, MapPin, Phone, ShieldCheck } from "lucide-react";
+import { ArrowUpRight, MapPin, Pause, Phone, Play, ShieldCheck } from "lucide-react";
 
 const chapters = [
   {
@@ -185,8 +185,13 @@ export function JourneyStory() {
               <ArrowUpRight size={18} />
             </Link>
           </div>
-          <button onClick={() => setPaused(!paused)} aria-pressed={paused} className="story-pause">
-            {paused ? "Play illustration" : "Pause illustration"}
+          <button
+            onClick={() => setPaused(!paused)}
+            aria-pressed={paused}
+            aria-label={paused ? "Play illustration" : "Pause illustration"}
+            className="story-pause"
+          >
+            {paused ? <Play size={14} /> : <Pause size={14} />}
           </button>
         </div>
       </div>

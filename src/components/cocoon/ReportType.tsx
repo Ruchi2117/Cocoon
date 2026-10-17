@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { motion, useInView, useReducedMotion, useScroll, useTransform } from "motion/react";
+import { Pause, Play } from "lucide-react";
 
 export function ReportType() {
   const ref = useRef<HTMLElement>(null);
@@ -49,11 +50,12 @@ export function ReportType() {
           Community observations, clearly labelled.
         </p>
         <button
+          aria-label={still ? "Move the words" : "Rest the words"}
           aria-pressed={still || !!reduced}
           disabled={!!reduced}
           onClick={() => setStill(!still)}
         >
-          {reduced ? "Reduced motion" : still ? "Move the words ↗" : "Rest the words ↙"}
+          {still ? <Play size={14} /> : <Pause size={14} />}
         </button>
       </div>
     </section>

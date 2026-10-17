@@ -137,6 +137,33 @@ export type Database = {
         }
         Relationships: []
       }
+      guest_voice_sessions: {
+        Row: {
+          client_hash: string
+          ended_at: string | null
+          expires_at: string
+          id: string
+          started_at: string
+          status: string
+        }
+        Insert: {
+          client_hash: string
+          ended_at?: string | null
+          expires_at?: string
+          id?: string
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          client_hash?: string
+          ended_at?: string | null
+          expires_at?: string
+          id?: string
+          started_at?: string
+          status?: string
+        }
+        Relationships: []
+      }
       inapp_alerts: {
         Row: {
           acknowledged_at: string | null
@@ -671,6 +698,7 @@ export type Database = {
       read_private_journeys: { Args: { p_guardian?: boolean }; Returns: Json }
       reconcile_notify: { Args: { p_sid: string }; Returns: undefined }
       release_notify_worker: { Args: { p_token: string }; Returns: undefined }
+      reserve_guest_voice: { Args: { p_client: string }; Returns: string }
       reserve_voice: { Args: { p_user: string }; Returns: string }
       retrieve_inapp_inbox: { Args: never; Returns: Json }
       revoke_guardian: { Args: { p_id: string }; Returns: undefined }

@@ -8,13 +8,13 @@ export const Route = createFileRoute("/presence")({
       {
         name: "description",
         content:
-          "Text-first guided company, grounding and next steps with optional browser speech. Scripted, not natural AI; private SOS and journeys remain separate.",
+          "An explicitly consented AI companion call with a capped no-account demo and a separate scripted browser demo. Private SOS and journeys remain separate.",
       },
       { property: "og:title", content: "Cocoon Presence · the night listening room" },
       {
         property: "og:description",
         content:
-          "A little company, in your own time. Optional browser voice and ephemeral guided conversation, with separate private SOS.",
+          "A little company, in your own time: consent-based AI voice, network-limited guest calls and a separate labelled script. No tracking or automatic alerts.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

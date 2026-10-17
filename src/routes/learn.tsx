@@ -1,3 +1,4 @@
+import { ScrollWords } from "@/components/cocoon/WaveText";
 import { GuidedSafety } from "@/components/cocoon/GuidedSafety";
 import { LearningLab } from "@/components/cocoon/LearningLab";
 import { RightsDesk } from "@/components/cocoon/RightsDesk";
@@ -8,6 +9,7 @@ import { ArrowUpRight, HeartHandshake } from "lucide-react";
 import { lessons, learningSources, scenarios } from "@/lib/cocoon/learning";
 import { JourneyScene } from "@/components/cocoon/JourneyScene";
 import { LearningPaths } from "@/components/cocoon/LearningPaths";
+import { SafetyOrbit } from "@/components/cocoon/SafetyOrbit";
 export const Route = createFileRoute("/learn")({
   head: () => ({
     meta: [
@@ -17,6 +19,14 @@ export const Route = createFileRoute("/learn")({
         content:
           "Consent, boundaries, safety education, support principles and jurisdiction-labelled legal information.",
       },
+      { property: "og:title", content: "Know your ground · Cocoon Safety Library" },
+      {
+        property: "og:description",
+        content:
+          "Consent, boundaries, safety education, support principles and jurisdiction-labelled legal information.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: SafetyLibrary,
@@ -25,17 +35,20 @@ function SafetyLibrary() {
   return (
     <div className="safety-library">
       <JourneyScene variant="learn" />
+      <ScrollWords
+        text="Knowing the signs never puts the weight on you. It just gives you more ways to act, and more people to act with."
+        accent={["never", "act", "with"]}
+      />
       <nav className="learn-room-shortcuts" aria-label="Explore the safety library">
         <a href="#courage-studio">Courage Studio ✳</a>
         <a href="#guides">Pocket guides ↗</a>
         <a href="#learning-lab-title">Field notes ↗</a>
         <a href="#rights">Rights & laws · India ↗</a>
         <a href="#consent-room">Consent & coercion ↗</a>
-        <Link to="/reports" hash="news">
-          News desk ↗
-        </Link>
+        <a href="#orbit-title">Safety carousel ↻</a>
       </nav>
       <CourageStudio />
+      <SafetyOrbit />
       <GuidedSafety />
       <LearningLab />
       <ConsentRoom />
@@ -129,9 +142,6 @@ function SafetyLibrary() {
           ))}
         </section>
       </details>
-      <Link to="/reports" hash="news" className="learn-news-handoff">
-        Looking for current coverage? Open the Reports news desk ↗
-      </Link>
       <footer className="learn-footer">
         <span>
           Education sources reviewed 17 October 2026. Guidance is general; services, consent laws

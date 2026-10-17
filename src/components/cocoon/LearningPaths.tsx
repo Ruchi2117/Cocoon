@@ -72,7 +72,6 @@ export function LearningPaths() {
             const lesson = lessons.find((l) => l.id === id)!;
             return (
               <li key={id}>
-                <span aria-hidden="true">0{i + 1}</span>
                 <a href={`#${id}`}>
                   <strong>{lesson.title}</strong>
                   <small>{lesson.intro}</small>

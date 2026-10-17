@@ -1,3 +1,4 @@
+import { WaveText } from "@/components/cocoon/WaveText";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { FlashlightThreshold } from "@/components/cocoon/FlashlightThreshold";
@@ -11,7 +12,24 @@ import {
   type ReferralDemo,
 } from "@/lib/cocoon/referral-demo";
 export const Route = createFileRoute("/welcome")({
-  head: () => ({ meta: [{ title: "Step inside · Cocoon" }] }),
+  head: () => ({
+    meta: [
+      { title: "Step inside · Cocoon" },
+      {
+        name: "description",
+        content:
+          "Step inside Cocoon, a demo journey companion with routes, trusted contacts and a practical safety toolkit.",
+      },
+      { property: "og:title", content: "Step inside · Cocoon" },
+      {
+        property: "og:description",
+        content:
+          "Step inside Cocoon, a demo journey companion with routes, trusted contacts and a practical safety toolkit.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   validateSearch: (search: Record<string, unknown>) => ({
     invite:
       typeof search["invite"] === "string" && /^COCOON-[A-Z0-9]{8}$/.test(search["invite"])
@@ -78,7 +96,9 @@ export function WelcomeExperience({ invite }: { invite?: string | undefined }) {
           <h1 id="welcome-title">
             A LITTLE LIGHT.
             <br />
-            <em>A WAY TOGETHER.</em>
+            <em>
+              <WaveText text="A WAY TOGETHER." step={0.06} />
+            </em>
           </h1>
           <p>A place to find your way, learn what matters, and make room for each other.</p>
           {invite && (
@@ -116,12 +136,12 @@ export function WelcomeExperience({ invite }: { invite?: string | undefined }) {
           ) : (
             <div className="welcome-arrival" role="status">
               <p>Make yourself at home{name.trim() ? `, ${name.trim()}` : ""}.</p>
-              <Link to="/" viewTransition onClick={completeEntry}>
+              <Link to="/" viewTransition={false} onClick={completeEntry}>
                 Enter Cocoon <ArrowUpRight size={22} />
               </Link>
             </div>
           )}
-          <Link className="welcome-skip" to="/" onClick={completeEntry}>
+          <Link className="welcome-skip" to="/" viewTransition={false} onClick={completeEntry}>
             Skip this and explore ↗
           </Link>
           <p className="welcome-demo-note">

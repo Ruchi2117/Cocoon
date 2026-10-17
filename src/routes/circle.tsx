@@ -14,8 +14,13 @@ import {
   Bookmark,
   Search,
   ChevronDown,
+  Heart,
+  Sparkles,
+  Moon,
 } from "lucide-react";
 import { toast } from "sonner";
+import { inkSplash } from "@/lib/cocoon/splash";
+import { CircleAvatar } from "@/components/cocoon/CircleAvatar";
 import { GirlFigure } from "@/components/cocoon/GirlFigure";
 import { useDemoState } from "@/lib/cocoon/store";
 import {
@@ -45,6 +50,14 @@ export const Route = createFileRoute("/circle")({
         content:
           "A women-centered peer-support prototype with thoughtful conversations, consent-led replies and review before publishing.",
       },
+      { property: "og:title", content: "The Circle · Cocoon" },
+      {
+        property: "og:description",
+        content:
+          "A women-centered peer-support prototype with thoughtful conversations, consent-led replies and review before publishing.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: CirclePage,
@@ -68,6 +81,7 @@ function CirclePage() {
   const [view, setView] = useState<"circle" | "mine">("circle");
   const [topic, setTopic] = useState("all");
   const [search, setSearch] = useState("");
+  const [author, setAuthor] = useState<string | null>(null);
   const [savedOnly, setSavedOnly] = useState(false);
   const [sort, setSort] = useState("recent");
   const [writing, setWriting] = useState(false);
@@ -78,6 +92,7 @@ function CirclePage() {
     .filter(
       (p) =>
         (topic === "all" || p.topic === topic) &&
+        (!author || p.authorId === author) &&
         (!savedOnly || saved.includes(p.id)) &&
         `${p.title} ${p.sensitive ? "" : p.body}`
           .toLowerCase()
@@ -140,6 +155,29 @@ function CirclePage() {
         </div>
         <a href="#circle-conversations">Browse conversations ↓</a>
       </div>
+      <div className="circle-stories" aria-label="People in the demo Circle (fictional)">
+        {Array.from(new Set(visiblePosts.map((p) => p.authorId)))
+          .slice(0, 10)
+          .map((id, i) => (
+            <button
+              key={id}
+              type="button"
+              className="circle-story"
+              aria-pressed={author === id}
+              style={{ animationDelay: `${i * 60}ms` }}
+              onClick={() => {
+                setView("circle");
+                setAuthor(author === id ? null : id);
+                document.getElementById("circle-conversations")?.scrollIntoView({ behavior: reduced ? "instant" : "smooth" });
+              }}
+            >
+              <span className="circle-story-ring">
+                <CircleAvatar id={id} size={58} />
+              </span>
+              <small>{circleAlias(id)}</small>
+            </button>
+          ))}
+      </div>
       <div className="circle-rooms" role="group" aria-label="Conversation rooms">
         {Object.entries(CIRCLE_TOPICS).map(([key, label], i) => {
           const Icon = [Sprout, HandHeart, Compass, CloudMoon][i]!;
@@ -162,10 +200,16 @@ function CirclePage() {
           );
         })}
       </div>
+      {topic !== "all" && topic in ROOMS && (
+        <RoomBanner
+          topic={topic as keyof typeof ROOMS}
+          authors={Array.from(new Set(visiblePosts.filter((p) => p.topic === topic).map((p) => p.authorId)))}
+          count={visiblePosts.filter((p) => p.topic === topic).length}
+          onClose={() => setTopic("all")}
+        />
+      )}
       <div className="circle-compose-invitation">
-        <span className="circle-avatar" aria-hidden="true">
-          {circleAlias(viewer).slice(0, 1)}
-        </span>
+        <CircleAvatar id={viewer} size={44} />
         <button
           disabled={s.role !== "traveller"}
           onClick={() => {
@@ -318,6 +362,11 @@ function CirclePage() {
                 {visiblePosts.filter((p) => saved.includes(p.id)).length}
               </button>
             </div>
+            {author && (
+              <button type="button" className="circle-author-chip" onClick={() => setAuthor(null)}>
+                <CircleAvatar id={author} size={22} /> Showing {circleAlias(author)} · clear ✕
+              </button>
+            )}
             <p className="circle-feed-count" aria-live="polite">
               {posts.length} visible {posts.length === 1 ? "conversation" : "conversations"}
               {topic !== "all" ? ` in ${CIRCLE_TOPICS[topic as keyof typeof CIRCLE_TOPICS]}` : ""} ·
@@ -502,8 +551,10 @@ function CircleComposer({ editing, onDone }: { editing: CirclePost | null; onDon
       className="circle-composer"
       onSubmit={(e) => {
         e.preventDefault();
+        const btn = (e.nativeEvent as SubmitEvent).submitter ?? e.currentTarget;
         attempt(() => {
           submitCirclePost({ title, body, topic, need, sensitive }, editing?.id);
+          inkSplash(btn);
           toast("Submitted to the local review queue. It is not public yet.");
           onDone();
         });
@@ -596,10 +647,11 @@ function Conversation({
     <article className="circle-conversation" data-topic={post.topic} data-expanded={threadOpen}>
       <div className="circle-post-meta">
         <span className="circle-feed-author">
-          <i className={`circle-avatar avatar-${post.topic}`} aria-hidden="true">
-            {circleAlias(post.authorId).slice(0, 1)}
-          </i>
-          {circleAlias(post.authorId)}
+          <CircleAvatar id={post.authorId} size={46} />
+          <span className="circle-feed-name">
+            <strong>{circleAlias(post.authorId)}</strong>
+            <small>@{circleAlias(post.authorId).toLowerCase().replace(" ", "")}</small>
+          </span>
         </span>
         <span>{CIRCLE_TOPICS[post.topic]}</span>
         <span>{post.demo ? "Fictional example" : "Local demo contribution"}</span>
@@ -627,9 +679,7 @@ function Conversation({
           )}
           {replies[0] && !threadOpen && (
             <div className="circle-reply-preview">
-              <span className="circle-avatar" aria-hidden="true">
-                {circleAlias(replies[0].authorId).slice(0, 1)}
-              </span>
+              <CircleAvatar id={replies[0].authorId} size={30} />
               <p>
                 <strong>{circleAlias(replies[0].authorId)}</strong>
                 {replies[0].body.slice(0, 140)}
@@ -637,6 +687,7 @@ function Conversation({
               </p>
             </div>
           )}
+          <Reactions />
           <p className="circle-standard">Peer support · conduct review is not fact verification</p>
           <div className="circle-thread-actions">
             <button onClick={() => setThreadOpen(!threadOpen)} aria-expanded={threadOpen}>
@@ -671,12 +722,15 @@ function Conversation({
               </p>
             )}
             {replies.map((reply) => (
-              <div key={reply.id} className="circle-reply">
-                <span>
-                  {circleAlias(reply.authorId)} ·{" "}
-                  {reply.demo ? "fictional example" : "demo-reviewed reply"}
-                </span>
-                <p>{reply.body}</p>
+              <div key={reply.id} className="circle-reply circle-bubble-row">
+                <CircleAvatar id={reply.authorId} size={34} />
+                <div className="circle-bubble">
+                  <span>
+                    <strong>{circleAlias(reply.authorId)}</strong> ·{" "}
+                    {reply.demo ? "fictional example" : "demo-reviewed reply"}
+                  </span>
+                  <p>{reply.body}</p>
+                </div>
                 <MessageOptions
                   id={reply.id}
                   authorId={reply.authorId}
@@ -689,8 +743,10 @@ function Conversation({
               <form
                 onSubmit={(e) => {
                   e.preventDefault();
+                  const btn = (e.nativeEvent as SubmitEvent).submitter ?? e.currentTarget;
                   attempt(() => {
                     submitCircleReply(post.id, body);
+                    inkSplash(btn);
                     setBody("");
                     toast("Reply awaiting demo review. See My contributions.");
                   });
@@ -792,5 +848,123 @@ function MessageOptions({
         Hide this author
       </button>
     </details>
+  );
+}
+
+const REACTIONS = [
+  ["with", Heart, "With you"],
+  ["same", Sparkles, "Same here"],
+  ["calm", Moon, "Sending calm"],
+] as const;
+/** Gentle reactions, kept on this screen only — no counts, nothing stored or shown to others. */
+function Reactions() {
+  const [on, setOn] = useState<string | null>(null);
+  return (
+    <div className="circle-reactions" role="group" aria-label="React (only on your screen)">
+      {REACTIONS.map(([k, Icon, label]) => (
+        <button key={k} type="button" aria-pressed={on === k} onClick={() => setOn(on === k ? null : k)}>
+          <Icon size={15} aria-hidden="true" fill={on === k ? "currentColor" : "none"} /> {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+const ROOMS = {
+  body: {
+    tag: "Periods & body",
+    line: "Cramps, cycles, tiredness and the awkward bits — talked about plainly.",
+    tip: "Share what helps you, not what someone else should take. Medical questions belong with a doctor.",
+    prompts: ["How do you ask for a break?", "Your comfort kit for long days", "Explaining it to a teacher or boss"],
+    motif: "body",
+  },
+  boundaries: {
+    tag: "Boundaries & relationships",
+    line: "Saying no, noticing pressure, and keeping the people who respect you.",
+    tip: "A boundary doesn’t need a long explanation. Replies here suggest, they don’t instruct.",
+    prompts: ["Short ways to say no", "When a friend crosses a line", "Pressure online vs in person"],
+    motif: "boundaries",
+  },
+  campus: {
+    tag: "Travel & campus life",
+    line: "Late labs, new cities, first solo trips and getting home settled.",
+    tip: "Keep places general. Never post someone’s exact address, hostel room or live location here.",
+    prompts: ["Your late-walk habits", "Ride sharing without awkwardness", "First week in a new city"],
+    motif: "campus",
+  },
+  feelings: {
+    tag: "How I’m feeling",
+    line: "A soft place to say it out loud. Listening first, fixing later (or never).",
+    tip: "If someone says ‘just listen’, listen. If you’re in danger, use SOS or local emergency numbers.",
+    prompts: ["One word for today", "Something small that helped", "Exam-week check-in"],
+    motif: "feelings",
+  },
+} as const;
+
+function RoomMotif({ kind }: { kind: string }) {
+  return (
+    <svg className="room-motif" viewBox="0 0 200 140" aria-hidden="true">
+      {kind === "body" && (
+        <g>
+          <circle cx="100" cy="70" r="46" className="rm-a" />
+          <path d="M100 38c14 18 22 30 22 42a22 22 0 0 1-44 0c0-12 8-24 22-42z" className="rm-b" />
+          <circle cx="60" cy="30" r="6" className="rm-c" /><circle cx="150" cy="110" r="8" className="rm-c" />
+        </g>
+      )}
+      {kind === "boundaries" && (
+        <g>
+          <circle cx="78" cy="70" r="40" className="rm-a" />
+          <circle cx="122" cy="70" r="40" className="rm-b" />
+          <path d="M100 30v80" className="rm-line" />
+        </g>
+      )}
+      {kind === "campus" && (
+        <g>
+          <path d="M20 120 C60 90 90 110 120 80 S170 50 190 30" className="rm-road" />
+          <rect x="40" y="56" width="34" height="44" rx="4" className="rm-a" />
+          <rect x="120" y="40" width="40" height="52" rx="4" className="rm-b" />
+          <circle cx="186" cy="30" r="9" className="rm-c" />
+        </g>
+      )}
+      {kind === "feelings" && (
+        <g>
+          <path d="M100 116C56 88 40 62 56 44c12-13 32-10 44 8 12-18 32-21 44-8 16 18 0 44-44 72z" className="rm-b" />
+          <circle cx="44" cy="100" r="7" className="rm-c" /><circle cx="160" cy="28" r="10" className="rm-a" />
+        </g>
+      )}
+    </svg>
+  );
+}
+
+function RoomBanner({ topic, authors, count, onClose }: { topic: keyof typeof ROOMS; authors: string[]; count: number; onClose: () => void }) {
+  const r = ROOMS[topic];
+  return (
+    <section className="room-banner" data-room={topic} aria-label={`${r.tag} room`} key={topic}>
+      <RoomMotif kind={r.motif} />
+      <div className="room-banner-text">
+        <p className="room-banner-eyebrow">Room · demo community</p>
+        <h3>{r.tag}</h3>
+        <p>{r.line}</p>
+        <div className="room-banner-members">
+          {authors.slice(0, 6).map((id, i) => (
+            <span key={id} style={{ zIndex: 10 - i }}>
+              <CircleAvatar id={id} size={34} />
+            </span>
+          ))}
+          <small>
+            {count} {count === 1 ? "conversation" : "conversations"} · fictional members
+          </small>
+        </div>
+        <p className="room-banner-tip"><strong>Room note:</strong> {r.tip}</p>
+        <div className="room-banner-prompts">
+          {r.prompts.map((t) => (
+            <span key={t}>{t}</span>
+          ))}
+        </div>
+      </div>
+      <button type="button" className="room-banner-close" onClick={onClose} aria-label="Back to all rooms">
+        ✕
+      </button>
+    </section>
   );
 }

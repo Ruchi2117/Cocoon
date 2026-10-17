@@ -40,4 +40,11 @@ describe("zero-payment release", () => {
     }
   });
 });
-
+describe("included Lovable live voice", () => {
+  it("is the only enabled voice path; external paid providers stay off", () => {
+    expect(PROVIDER_POLICY.lovableLive).toBe(true);
+    expect(PROVIDER_POLICY.naturalVoice).toBe(false);
+    expect(PROVIDER_POLICY.whatsapp).toBe(false);
+    expect(PROVIDER_POLICY.geminiLive).toBe(false);
+  });
+});

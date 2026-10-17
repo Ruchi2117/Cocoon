@@ -26,6 +26,7 @@ import { ArrivalScene } from "@/components/cocoon/ArrivalScene";
 import type { ShareKind } from "@/lib/cocoon/share";
 import { formatClock, formatDistance, usePrefs } from "@/lib/cocoon/locale";
 import type { LatLng } from "@/lib/cocoon/types";
+import { SharedLocations } from "@/components/cocoon/SharedLocations";
 import { PrivateJourneyPanel } from "@/components/cocoon/PrivateJourneyPanel";
 
 export const Route = createFileRoute("/trip")({
@@ -50,6 +51,7 @@ export const Route = createFileRoute("/trip")({
   component: () => (
     <div className="space-y-6">
       <PrivateJourneyPanel />
+      <SharedLocations />
       <details className="border-t pt-4">
         <summary className="cursor-pointer font-display text-xl">
           Local journey demo · simulated check-ins

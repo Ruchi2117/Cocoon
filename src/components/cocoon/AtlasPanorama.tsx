@@ -103,12 +103,7 @@ export function AtlasPanorama({
   const reduced = useReducedMotion();
   const quiet = still || !!reduced;
   const id = useId().replaceAll(":", "");
-  const palette =
-    scene === 0
-      ? ["#182640", "#607780", "#b99d91"]
-      : scene === 1
-        ? ["#20283f", "#737c9b", "#ccb69a"]
-        : ["#27273f", "#936f83", "#d7ab83"];
+  const palette = SKIES[place] ?? SKIES["Home"]!;
   const shift =
     place === "Routes"
       ? -35
@@ -125,8 +120,17 @@ export function AtlasPanorama({
       <svg viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
         <defs>
           <linearGradient id={`${id}sky`} x2="0" y2="1">
-            <stop stopColor={palette[0]} />
-            <stop offset="1" stopColor={palette[1]} />
+            <motion.stop
+              initial={false}
+              animate={{ stopColor: palette[0] }}
+              transition={{ duration: quiet ? 0 : 1.4 }}
+            />
+            <motion.stop
+              offset="1"
+              initial={false}
+              animate={{ stopColor: palette[1] }}
+              transition={{ duration: quiet ? 0 : 1.4 }}
+            />
           </linearGradient>
           <linearGradient id={`${id}water`} x2="0" y2="1">
             <stop stopColor="#638e94" />
@@ -171,10 +175,14 @@ export function AtlasPanorama({
         <AnimatePresence initial={false}>
           <motion.g
             key={place}
-            initial={quiet ? false : { x: direction * 170, opacity: 0 }}
-            animate={{ x: shift, opacity: 1 }}
-            exit={{ x: -direction * 170, opacity: 0 }}
-            transition={{ duration: quiet ? 0 : 1.1, ease: "easeInOut" }}
+            initial={quiet ? false : { x: shift + direction * 60, y: 140, opacity: 0 }}
+            animate={{ x: shift, y: 0, opacity: 1 }}
+            exit={{ x: shift - direction * 60, y: 90, opacity: 0 }}
+            transition={
+              quiet
+                ? { duration: 0 }
+                : { type: "spring", stiffness: 70, damping: 18, mass: 1, opacity: { duration: 0.6 } }
+            }
           >
             {["Home", "Journey", "Call", "Kit", "Reports"].includes(place) ? (
               <AtlasPlaces place={place} quiet={quiet} />
@@ -335,7 +343,14 @@ export function AtlasPanorama({
             [1600, 850, 2.1],
             [1350, 850, 0.8],
           ].map(([x, y, size], i) => (
-            <Pine key={i} x={x!} y={y!} size={size!} color={i % 2 ? "#244b50" : "#193946"} />
+            <motion.g
+              key={`${place}-${i}`}
+              initial={quiet ? false : { y: 320 }}
+              animate={{ y: 0 }}
+              transition={{ type: "spring", stiffness: 90, damping: 16, delay: 0.12 + (i % 3) * 0.09 }}
+            >
+              <Pine x={x!} y={y!} size={size!} color={i % 2 ? "#244b50" : "#193946"} />
+            </motion.g>
           ))}
         </motion.g>
         <motion.g animate={{ x: drift * 1.4 }} transition={{ duration: quiet ? 0 : 1.3 }}>
@@ -381,8 +396,32 @@ export function AtlasPanorama({
             transition={{ duration: 1.6 }}
           />
         )}
+        {!quiet &&
+          Array.from({ length: 14 }, (_, i) => (
+            <motion.circle
+              key={i}
+              cx={(i * 113 + 40) % 1600}
+              cy={980}
+              r={i % 3 === 0 ? 3.5 : 2}
+              fill={palette[2]}
+              animate={{ y: [0, -760], opacity: [0, 0.9, 0], x: [0, i % 2 ? 30 : -30, 0] }}
+              transition={{ duration: 9 + (i % 5) * 1.6, repeat: Infinity, delay: i * 0.7, ease: "easeOut" }}
+            />
+          ))}
         <rect width="1300" height="1000" fill={`url(#${id}shade)`} />
       </svg>
     </div>
   );
 }
+
+/** Each place keeps its own sky so the atlas really changes as you move between them. */
+const SKIES: Record<string, [string, string, string]> = {
+  Home: ["#182640", "#607780", "#f1d6a4"],
+  Routes: ["#14243a", "#4f7c88", "#cfe3d4"],
+  Journey: ["#1d2240", "#7a6f94", "#f2c48d"],
+  Call: ["#251d3a", "#8c5f7a", "#f5b9a4"],
+  Kit: ["#1c2a36", "#6f8a7c", "#e8d9a8"],
+  Reports: ["#1a1f33", "#5d6a8c", "#d6dcef"],
+  Learn: ["#20283f", "#737c9b", "#ead2a0"],
+  Circle: ["#27273f", "#936f83", "#f0c08e"],
+};

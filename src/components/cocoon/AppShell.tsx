@@ -233,7 +233,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Link
               to="/"
               hash={room.anchor}
-              viewTransition
+              viewTransition={false}
               onClick={(event) =>
                 enterWorld(event, { to: "/", hash: room.anchor, label: room.name })
               }

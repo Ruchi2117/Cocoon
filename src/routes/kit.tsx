@@ -280,7 +280,7 @@ function Kit() {
               to="/presence"
               className="rounded-full border border-background/40 px-4 py-2 text-sm"
             >
-              Call my companion (demo)
+              Open companion call
             </Link>
             <button
               ref={calmTrigger}
@@ -570,8 +570,9 @@ function CountryDirectory() {
         </div>
       )}
       <p className="text-xs text-muted-foreground">
-        “Call” opens your phone's dialler — it only dials if you confirm there. Cocoon's in-app SOS
-        is a demo and contacts no one outside the app. Coverage is not universal.
+        “Call” opens your phone's dialler — it only dials if you confirm there. Real in-app SOS
+        requires sign-in and selected consenting guardians, who must open their inbox. The local
+        demo is separate. Neither dispatches authorities. Coverage is not universal.
       </p>
     </section>
   );

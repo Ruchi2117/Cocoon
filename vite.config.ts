@@ -6,9 +6,12 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 import publicAuth from "./src/lib/production/public-auth-config.json";
+import { liveVoiceDev } from "./live-vite-plugin";
 
 export default defineConfig({
   vite: {
+    // Serves /api/live in dev/preview; published builds use src/server.ts.
+    plugins: [liveVoiceDev()],
     // Public build-time constants only. Never map SUPABASE_* or service-role secrets.
     // Pin the canonical hosted browser origin, not a sandbox or preview proxy.
     define: {
@@ -16,7 +19,7 @@ export default defineConfig({
       "import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY": JSON.stringify(publicAuth.publishableKey),
     },
   },
-  // Local Node build; the published Lovable copy uses the Cloudflare preset.
+  // Use Lovable's supported hosting target while preserving the custom server entry.
   nitro: { preset: "node-server" },
   tanstackStart: {
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).

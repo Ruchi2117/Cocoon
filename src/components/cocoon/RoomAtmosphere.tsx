@@ -1,7 +1,10 @@
 import { useId } from "react";
+import { useHydrated } from "@tanstack/react-router";
 import { motion, useReducedMotion, useScroll, useTransform } from "motion/react";
 export function RoomAtmosphere({ room }: { room: string }) {
-  const reduced = useReducedMotion(),
+  const hydrated = useHydrated();
+  const reducedPreference = useReducedMotion();
+  const reduced = hydrated && reducedPreference,
     id = useId().replaceAll(":", ""),
     library = room.includes("library"),
     river = room.includes("riverside");

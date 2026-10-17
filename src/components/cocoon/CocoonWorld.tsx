@@ -1,3 +1,4 @@
+import { WaveText } from "./WaveText";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Link } from "@tanstack/react-router";
 import {
@@ -65,7 +66,6 @@ export function CocoonWorld() {
   const ref = useRef<HTMLElement>(null);
   const stage = useRef<HTMLDivElement>(null);
   const [scene, setScene] = useState(0);
-  const [paused, setPaused] = useState(false);
   const [objectEngaged, setObjectEngaged] = useState(false);
   const [lookAround, setLookAround] = useState(0);
   const gazeTarget = useMotionValue(0);
@@ -74,7 +74,7 @@ export function CocoonWorld() {
   const gesture = useRef<{ x: number; y: number } | null>(null);
   const reduce = useReducedMotion();
   const inView = useInView(ref);
-  const active = inView && !paused && !reduce;
+  const active = inView && !reduce;
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
   const travel = useSpring(scrollYProgress, { stiffness: 65, damping: 26, restDelta: 0.0001 });
   const x = useTransform(travel, [0, 1 / 3, 2 / 3, 1], camera);
@@ -143,7 +143,7 @@ export function CocoonWorld() {
         ref={stage}
         className="world-stage"
         data-object-active={objectEngaged}
-        data-motion-reduced={!!reduce || paused}
+        data-motion-reduced={!!reduce}
         onPointerMove={(event) => {
           if (!active || objectEngaged) return;
           const bounds = event.currentTarget.getBoundingClientRect();
@@ -463,7 +463,7 @@ export function CocoonWorld() {
           <motion.g
             initial={false}
             animate={{ opacity: objectEngaged ? 1 : 0 }}
-            transition={{ duration: reduce || paused ? 0 : 0.35 }}
+            transition={{ duration: reduce ? 0 : 0.35 }}
           >
             {scene < 2 ? (
               <motion.path
@@ -478,7 +478,7 @@ export function CocoonWorld() {
                 strokeLinecap="round"
                 initial={{ pathLength: 0 }}
                 animate={{ pathLength: objectEngaged ? 1 : 0 }}
-                transition={{ duration: reduce || paused ? 0 : 1.1 }}
+                transition={{ duration: reduce ? 0 : 1.1 }}
               />
             ) : (
               <ellipse
@@ -528,12 +528,7 @@ export function CocoonWorld() {
             ))}
           </motion.g>
           {scene === 2 && (
-            <WorldNightLight
-              progress={travel}
-              pointer={gaze}
-              reduced={!!reduce || paused}
-              layer="people"
-            />
+            <WorldNightLight progress={travel} pointer={gaze} reduced={!!reduce} layer="people" />
           )}
           <motion.g
             className="world-guide"
@@ -551,7 +546,7 @@ export function CocoonWorld() {
                 active={active}
                 gaze={gaze}
                 pose={guidePose}
-                lookBack={reduce || paused ? 0 : lookAround}
+                lookBack={reduce ? 0 : lookAround}
                 walking={scene === 2 && active}
                 phoneHref="/presence"
                 onPhoneClick={(event) =>
@@ -560,27 +555,11 @@ export function CocoonWorld() {
               />
             </g>
           </motion.g>
-          <WorldNightLight
-            progress={travel}
-            pointer={gaze}
-            reduced={!!reduce || paused}
-            layer="light"
-          />
+          <WorldNightLight progress={travel} pointer={gaze} reduced={!!reduce} layer="light" />
         </svg>
         <div className="world-contrast" />
         <div className="world-topline">
           <span>COCOON WORLD / LOCAL DEMO</span>
-          <details className="world-motion-settings">
-            <summary>Display settings</summary>
-            <label>
-              <input
-                type="checkbox"
-                checked={paused}
-                onChange={(event) => setPaused(event.target.checked)}
-              />{" "}
-              Reduce animation
-            </label>
-          </details>
           <Link to={trip ? "/trip" : "/explore"}>
             {trip ? "CONTINUE YOUR JOURNEY" : "SKIP TO ROUTE PLANNER"}
             <ArrowUpRight size={14} />
@@ -601,7 +580,9 @@ export function CocoonWorld() {
               <h1>
                 {place.title[0]}
                 <br />
-                <em>{place.title[1]}</em>
+                <em>
+                  <WaveText text={place.title[1] ?? ""} step={0.06} />
+                </em>
               </h1>
               <p>{place.text}</p>
             </motion.div>
@@ -609,7 +590,7 @@ export function CocoonWorld() {
         </div>
         <WorldDestinations
           scene={scene}
-          reduced={!!reduce || paused}
+          reduced={!!reduce}
           onEngage={(engaged) => {
             setObjectEngaged(engaged);
             gazeTarget.set(engaged ? (scene === 1 || scene === 2 ? 5 : -5) : 0);

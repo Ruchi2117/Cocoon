@@ -15,6 +15,7 @@ import type { Role } from "@/lib/cocoon/types";
 import { AtlasPanorama } from "./AtlasPanorama";
 import { motion, useReducedMotion } from "motion/react";
 import { enterWorld } from "@/lib/cocoon/world-navigation";
+import { ThreadText } from "./WaveText";
 const NIGHT_CHAPTERS = [
   {
     name: "The city is awake",
@@ -81,7 +82,7 @@ export function WorldMenu({
   const current = items.find((item) => item.to === location.pathname);
   const [preview, setPreview] = useState<string | null>(null);
   const [scene, setScene] = useState(0);
-  const [still, setStill] = useState(false);
+  const still = false;
   const [direction, setDirection] = useState(1);
   const lastWheel = useRef(0);
   const sceneFor = (label: string) =>
@@ -194,22 +195,19 @@ export function WorldMenu({
                 <button aria-label="Next nighttime scene" onClick={() => changeScene(1)}>
                   <ArrowRight size={18} />
                 </button>
-                <button
-                  className="atlas-still"
-                  aria-pressed={still || !!reduced}
-                  disabled={!!reduced}
-                  onClick={() => setStill(!still)}
-                >
-                  {reduced ? "Reduced motion" : still ? "Resume motion" : "Still scene"}
-                </button>
               </div>
             </section>
+            <ThreadText
+              className="atlas-thread"
+              label="Places in the atlas"
+              items={NIGHT_CHAPTERS.map((c) => c.name)}
+            />
             <nav aria-label="Explore Cocoon" className="world-menu-places">
               {items.map((item, index) => (
                 <Link
                   to={item.to as "/"}
                   key={item.to}
-                  viewTransition
+                  viewTransition={false}
                   onMouseEnter={() => previewPlace(item.label)}
                   onFocus={() => previewPlace(item.label)}
                   data-preview={selected.label === item.label}
@@ -223,7 +221,6 @@ export function WorldMenu({
                   }}
                   aria-current={location.pathname === item.to ? "page" : undefined}
                 >
-                  <span className="menu-place-number">0{index + 1}</span>
                   <item.icon size={26} />
                   <span>
                     <strong>{item.label}</strong>

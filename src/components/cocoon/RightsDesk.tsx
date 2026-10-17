@@ -135,7 +135,6 @@ export function RightsDesk() {
               aria-pressed={selected === index}
               onClick={() => setSelected(index)}
             >
-              <span>0{index + 1}</span>
               <strong>{topic.name}</strong>
               <small>{topic.context}</small>
               <ArrowUpRight size={17} />

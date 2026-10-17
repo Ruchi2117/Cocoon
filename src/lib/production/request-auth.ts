@@ -14,4 +14,10 @@ export async function authenticateRequest(request: Request) {
   if (error || !data.user || !data.user.email_confirmed_at) return null;
   return { user: data.user, client };
 }
-
+/** Same verification for a bearer token that arrives inside a WebSocket start message. */
+export async function authenticateToken(token: string) {
+  if (!token || token.length > 8192) return null;
+  return authenticateRequest(
+    new Request("http://internal.invalid/", { headers: { authorization: `Bearer ${token}` } }),
+  );
+}

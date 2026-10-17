@@ -19,6 +19,7 @@ export function PresenceBuddy({
         title={phase === "speaking" ? "Stop speaking" : "Lantern moth"}
       >
         <svg viewBox="0 0 440 370" aria-hidden="true">
+          <circle className="lantern-halo" cx="220" cy="240" r="150" />
           <path className="lantern-thread" d="M220 0v57m-14 0h28m-14 0v20" />
           <g className="moth-body">
             <g className="moth-wing moth-wing-left">

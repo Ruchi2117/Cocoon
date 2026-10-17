@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { AnimatePresence, motion, useInView, useReducedMotion } from "motion/react";
-import { ArrowUpRight, Bookmark, RotateCcw, Sparkles } from "lucide-react";
+import { ArrowUpRight, Bookmark, Pause, Play, RotateCcw, Sparkles } from "lucide-react";
 import { COURAGE_SCENES, couragePocket } from "@/lib/cocoon/courage-studio";
 import { CourageScene } from "./CourageScene";
 
@@ -72,7 +72,6 @@ export function CourageStudio() {
               setChoice(null);
             }}
           >
-            <span>0{i + 1}</span>
             {s.title}
             <ArrowUpRight size={16} />
           </button>
@@ -83,11 +82,12 @@ export function CourageStudio() {
           <div className="courage-world-meta">
             <span>{scene.place}</span>
             <button
+              aria-label={still ? "Let the scene move" : "Rest the scene"}
               aria-pressed={still || !!reduced}
               disabled={!!reduced}
               onClick={() => setStill(!still)}
             >
-              {reduced ? "Reduced motion" : still ? "Let the scene move" : "Rest the scene"}
+              {still ? <Play size={13} /> : <Pause size={13} />}
             </button>
           </div>
           <CourageScene chapter={chapter} choice={choice} quiet={quiet} />
@@ -103,7 +103,6 @@ export function CourageStudio() {
           <div className="courage-choices">
             {scene.choices.map((c, i) => (
               <button key={c.label} aria-pressed={choice === i} onClick={() => setChoice(i)}>
-                <span>0{i + 1}</span>
                 <div>
                   <small>{c.object}</small>
                   <strong>{c.label}</strong>

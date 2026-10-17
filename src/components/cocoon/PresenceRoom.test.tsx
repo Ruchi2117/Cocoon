@@ -1,125 +1,121 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PresenceRoom } from "./PresenceRoom";
+
 const m = vi.hoisted(() => ({
-  listen: vi.fn(),
-  speak: vi.fn(),
+  user: null as null | { id: string },
+  start: vi.fn(),
   stop: vi.fn(),
-  onVoices: vi.fn(),
-  callbacks: [] as Array<{
-    start(): void;
-    result(t: string, f: boolean): void;
-    end(): void;
-    error(c: string): void;
-  }>,
-  reduced: false,
+  status: "idle",
+  error: null as string | null,
 }));
 vi.mock("@tanstack/react-router", () => ({
-  useHydrated: () => true,
-  Link: ({ children, to, ...props }: { children: React.ReactNode; to: string }) => (
-    <a href={to} {...props}>
-      {children}
-    </a>
+  Link: ({ children, to }: { children: React.ReactNode; to: string }) => (
+    <a href={to}>{children}</a>
   ),
 }));
-vi.mock("motion/react", () => ({ useInView: () => true, useReducedMotion: () => m.reduced }));
-vi.mock("@/lib/cocoon/locale", () => ({ usePrefs: () => ({ country: null }) }));
-vi.mock("@/lib/cocoon/store", () => ({ useDemoState: () => ({}) }));
-vi.mock("@/lib/cocoon/access", () => ({ activeTrip: () => null }));
-vi.mock("@/components/cocoon/SosPanel", () => ({
-  SosButton: () => <p>Separate private SOS review</p>,
+vi.mock("@/lib/production/auth", () => ({
+  useProductionAuth: () => ({ user: m.user, ready: true }),
 }));
-vi.mock("@/components/cocoon/SupportWorkspace", () => ({
-  SupportWorkspace: ({ stopSignal }: { stopSignal: number }) => (
-    <p>Manual desk · stop signal {stopSignal}</p>
-  ),
+vi.mock("@/integrations/supabase/client", () => ({
+  supabase: { auth: { getSession: async () => ({ data: { session: { access_token: "t" } } }) } },
 }));
-vi.mock("@/lib/cocoon/browser-session", async (importOriginal) => {
-  const original = await importOriginal<typeof import("@/lib/cocoon/browser-session")>();
-  return {
-    ...original,
-    browserSpeechPort: () => ({
-      recognitionSupported: true,
-      speechSupported: true,
-      voices: () => [{ id: "v", name: "Mock local", lang: "en", local: true }],
-      onVoicesChanged: m.onVoices,
-      listen: m.listen,
-      speak: m.speak,
-    }),
-  };
-});
+vi.mock("@/hooks/use-live-voice", () => ({
+  useLiveVoice: () => ({
+    status: m.status,
+    error: m.error,
+    muted: false,
+    playbackBlocked: false,
+    audioRef: { current: null },
+    start: m.start,
+    stop: m.stop,
+    setMuted: vi.fn(),
+    resumePlayback: vi.fn(),
+  }),
+}));
+vi.mock("@/components/cocoon/ScriptedPresenceDemo", () => ({
+  ScriptedPresenceDemo: () => <p>Scripted demo body</p>,
+}));
+vi.mock("@/components/cocoon/SosPanel", () => ({ SosButton: () => <p>SOS review</p> }));
+vi.mock("@/components/cocoon/SupportWorkspace", () => ({ SupportWorkspace: () => null }));
+
 beforeEach(() => {
   vi.clearAllMocks();
-  m.callbacks = [];
-  m.reduced = false;
-  m.onVoices.mockReturnValue(vi.fn());
-  m.listen.mockImplementation((c) => {
-    m.callbacks.push(c);
-    return m.stop;
-  });
-  m.speak.mockReturnValue(m.stop);
+  m.user = null;
+  m.status = "idle";
+  m.error = null;
+  localStorage.clear();
 });
-afterEach(() => {
-  cleanup();
-  vi.restoreAllMocks();
-});
-describe("Presence room mocked browser call flow", () => {
-  it("text-first guided session, next step and ephemeral end summary without microphone", async () => {
+afterEach(cleanup);
+
+describe("Presence live call screen", () => {
+  it("signed out: offers a capped demo call that sends no sign-in token", () => {
     render(<PresenceRoom />);
-    fireEvent.click(screen.getByRole("button", { name: /Begin text session/ }));
-    fireEvent.click(screen.getByRole("button", { name: /Help decide a next step/ }));
-    fireEvent.change(screen.getByRole("textbox", { name: "Your message" }), {
-      target: { value: "Where is my journey?" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
-    await screen.findByRole("link", { name: "Open Journey ↗" });
-    fireEvent.click(screen.getByRole("button", { name: /^End$/ }));
-    expect(screen.getByRole("region", { name: "Ephemeral session summary" })).toBeVisible();
-    expect(m.listen).not.toHaveBeenCalled();
-    expect(m.speak).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Clear session" }));
-    expect(screen.queryByText("Where is my journey?")).toBeNull();
+    expect(screen.getByText(/Demo call · real AI voice, 2 minutes/)).toBeVisible();
+    expect(screen.getByRole("button", { name: /Try a demo call/ })).toBeVisible();
   });
-  it("permission denial is actionable, typing works and late recognition after end is ignored", async () => {
+  it("after a failed call: user-initiated trusted-contact dialler", () => {
+    localStorage.setItem(
+      "cocoon-kit-v1",
+      JSON.stringify({ trustedName: "Asha", trustedNumber: "+919800000000" }),
+    );
+    m.error = "Voice service connection failed";
     render(<PresenceRoom />);
-    fireEvent.click(screen.getByRole("button", { name: "Browser voice" }));
-    fireEvent.click(screen.getByRole("button", { name: /Begin browser session/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Stop listening / playback" }));
-    fireEvent.click(screen.getByRole("button", { name: "Listen once" }));
-    act(() => m.callbacks[0]?.error("not-allowed"));
-    expect(screen.getByRole("alert")).toHaveTextContent("permission denied");
-    expect(m.listen).toHaveBeenCalledTimes(1);
-    fireEvent.change(screen.getByRole("textbox", { name: "Your message" }), {
-      target: { value: "type instead" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Send message" }));
-    await waitFor(() => expect(screen.getByRole("log")).toHaveTextContent("type instead"));
-    fireEvent.click(screen.getByRole("button", { name: /^End$/ }));
-    act(() => m.callbacks[0]?.result("late callback", true));
-    expect(screen.getByRole("log")).not.toHaveTextContent("late callback");
+    expect(screen.getByRole("link", { name: /Asha/ })).toHaveAttribute(
+      "href",
+      expect.stringMatching(/^tel:/),
+    );
   });
-  it("hidden page stops voice and does not resume; unmount detaches voice-list subscription", () => {
-    const unsub = vi.fn();
-    m.onVoices.mockReturnValue(unsub);
+  it("no guided-intent questionnaire; scripted demo is collapsed and secondary", () => {
+    render(<PresenceRoom />);
+    expect(screen.queryByText(/Help decide a next step/)).toBeNull();
+    expect(
+      screen.getByText(/Scripted browser demo \(not AI/).closest("details"),
+    ).not.toHaveAttribute("open");
+  });
+  it("signed in: start won't call until all three acknowledgements, then sends token + context once", async () => {
+    m.user = { id: "u" };
+    render(<PresenceRoom />);
+    const startBtn = screen.getByRole("button", { name: /Start call/ });
+    fireEvent.click(startBtn);
+    expect(m.start).not.toHaveBeenCalled();
+    expect(screen.getByRole("alert")).toHaveTextContent(/three boxes/);
+    for (const box of screen.getAllByRole("checkbox")) fireEvent.click(box);
+    fireEvent.click(startBtn);
+    expect(m.start).toHaveBeenCalledTimes(1);
+    const payload = await m.start.mock.calls[0]?.[0]();
+    expect(payload.token).toBe("t");
+    expect(payload.context).toMatchObject({ mode: "pretend", alias: "Didi", audioConsent: true });
+    expect(payload.context).not.toHaveProperty("location");
+  });
+  it("failed call shows the error and the trusted-contact handoff instead of a scripted fallback", () => {
+    m.user = { id: "u" };
+    m.status = "closed";
+    m.error = "You already have a call open, or reached today's call limit.";
+    render(<PresenceRoom />);
+    expect(screen.getByRole("alert")).toHaveTextContent(/call limit/);
+    expect(screen.getByText(/Call a real person instead/)).toBeVisible();
+  });
+  it("in a call: End call uses the single stop path", () => {
+    m.user = { id: "u" };
+    m.status = "connected";
+    render(<PresenceRoom />);
+    fireEvent.click(screen.getByRole("button", { name: /End call/ }));
+    expect(m.stop).toHaveBeenCalledTimes(1);
+  });
+  it("account switch or sign-out ends the active call", () => {
+    m.user = { id: "u" };
+    m.status = "connected";
     const view = render(<PresenceRoom />);
-    fireEvent.click(screen.getByRole("button", { name: "Browser voice" }));
-    fireEvent.click(screen.getByRole("button", { name: /Begin browser session/ }));
-    vi.spyOn(document, "hidden", "get").mockReturnValue(true);
-    fireEvent(document, new Event("visibilitychange"));
-    expect(screen.getByText(/Session paused while/)).toBeVisible();
+    m.stop.mockClear();
+    m.user = { id: "other" };
+    view.rerender(<PresenceRoom />);
     expect(m.stop).toHaveBeenCalled();
-    vi.spyOn(document, "hidden", "get").mockReturnValue(false);
-    fireEvent(document, new Event("visibilitychange"));
-    expect(m.listen).not.toHaveBeenCalled();
-    expect(m.speak).toHaveBeenCalledTimes(1);
-    view.unmount();
-    expect(unsub).toHaveBeenCalledTimes(1);
   });
-  it("reduced motion disables animation controls without disabling text or SOS access", () => {
-    m.reduced = true;
+  it("consent copy does not promise zero retention", () => {
+    m.user = { id: "u" };
     render(<PresenceRoom />);
-    expect(screen.getByRole("button", { name: "Reduced motion enabled" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Open SOS options" })).toBeEnabled();
-    expect(screen.getByRole("button", { name: /Begin text session/ })).toBeEnabled();
+    expect(document.body.textContent).not.toMatch(/no data retention|Nothing is recorded/i);
+    expect(document.body.textContent).toMatch(/retention policies apply/);
   });
 });

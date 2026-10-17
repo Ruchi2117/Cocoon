@@ -155,6 +155,8 @@ export function ReportCard({
   );
 }
 
+import { CircleText, WarpText } from "./WaveText";
+
 export function PageHeader({
   eyebrow,
   title,
@@ -165,9 +167,12 @@ export function PageHeader({
   children?: ReactNode;
 }) {
   return (
-    <header className="editorial-page-heading mb-6">
+    <header className="editorial-page-heading kinetic-heading mb-6">
+      <CircleText text={`${eyebrow} ✳ cocoon ✳ `.toUpperCase()} className="kinetic-badge" />
       <p className="eyebrow">{eyebrow}</p>
-      <h1 className="font-poster mt-3 max-w-4xl text-5xl sm:text-6xl">{title}</h1>
+      <h1 className="font-poster mt-3 max-w-4xl text-5xl sm:text-6xl">
+        <WarpText text={title} />
+      </h1>
       {children && <div className="mt-2 max-w-2xl text-sm text-muted-foreground">{children}</div>}
     </header>
   );

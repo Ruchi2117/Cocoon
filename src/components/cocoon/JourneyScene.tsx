@@ -1,13 +1,13 @@
 import { useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { motion, useInView, useReducedMotion, useScroll, useTransform } from "motion/react";
-import { ArrowUpRight, Pause, Play } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { GirlFigure } from "./GirlFigure";
 
 export function JourneyScene({ variant = "journey" }: { variant?: "journey" | "learn" }) {
   const learning = variant === "learn";
   const ref = useRef<HTMLElement>(null);
-  const [paused, setPaused] = useState(false);
+  const paused = false;
   const [night, setNight] = useState(false);
   const reduce = useReducedMotion();
   const inView = useInView(ref, { margin: "100px" });
@@ -145,13 +145,6 @@ export function JourneyScene({ variant = "journey" }: { variant?: "journey" | "l
             PLAN YOUR JOURNEY <ArrowUpRight size={20} />
           </Link>
         )}
-        <button
-          onClick={() => setPaused(!paused)}
-          aria-label={paused ? "Play scene animation" : "Pause scene animation"}
-          aria-pressed={paused}
-        >
-          {paused ? <Play size={15} /> : <Pause size={15} />}
-        </button>
       </div>
       <div className="poster-caption">
         <span>✳ YOUR SAFER ROUTE COMPANION</span>

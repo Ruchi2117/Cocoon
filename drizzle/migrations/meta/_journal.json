@@ -71,6 +71,13 @@
       "when": 1792258889832,
       "tag": "0009_cocoon_emergency_drafts_snapshots",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1792265781820,
+      "tag": "0010_cocoon_guest_voice_demo",
+      "breakpoints": true
     }
   ]
 }

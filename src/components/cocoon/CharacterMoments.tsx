@@ -151,10 +151,10 @@ export function CharacterMoments() {
           <button
             className="character-pause"
             aria-pressed={paused}
+            aria-label={paused ? "Play character animation" : "Pause character animation"}
             onClick={() => setPaused(!paused)}
           >
             {paused ? <Play size={14} /> : <Pause size={14} />}
-            {paused ? "Play character animation" : "Pause character animation"}
           </button>
         </div>
       </div>

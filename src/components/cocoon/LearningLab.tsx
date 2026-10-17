@@ -72,7 +72,6 @@ export function LearningLab() {
               setOpen(false);
             }}
           >
-            <span>0{i + 1}</span>
             {item.subtitle}
             <ArrowRight size={17} />
           </button>

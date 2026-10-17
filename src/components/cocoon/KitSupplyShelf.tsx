@@ -87,7 +87,7 @@ export function KitSupplyShelf() {
         {essentials.map((item, i) => (
           <article className={`supply-product supply-product-${i}`} key={item.name}>
             <ProductSketch index={i} />
-            <span className="eyebrow">0{i + 1} / optional essential</span>
+            <span className="eyebrow">Optional essential</span>
             <h3>{item.name}</h3>
             <p>{item.why}</p>
             <p className="supply-practical">
