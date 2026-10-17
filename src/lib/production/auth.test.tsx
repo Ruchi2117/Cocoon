@@ -1,17 +1,14 @@
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { render, screen, waitFor, cleanup } from "@testing-library/react";
-import { AuthProvider, useProductionAuth, bearerHeaders } from "./auth";
-
+import { act, render, screen, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { AuthProvider, bearerHeaders, productionAuthConfigured, useProductionAuth } from "./auth";
 const mocks = vi.hoisted(() => ({
   getUser: vi.fn(),
   getSession: vi.fn(),
   subscribe: vi.fn(),
   unsubscribe: vi.fn(),
-  router: { invalidate: vi.fn() },
-  cache: { cancelQueries: vi.fn(), clear: vi.fn(), invalidateQueries: vi.fn() },
+  invalidate: vi.fn(),
 }));
-vi.mock("@tanstack/react-router", () => ({ useRouter: () => mocks.router }));
-vi.mock("@tanstack/react-query", () => ({ useQueryClient: () => mocks.cache }));
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
     auth: {
@@ -21,42 +18,67 @@ vi.mock("@/integrations/supabase/client", () => ({
     },
   },
 }));
-function Status() {
+vi.mock("@tanstack/react-router", () => ({ useRouter: () => ({ invalidate: mocks.invalidate }) }));
+function Demo() {
   const { ready, user } = useProductionAuth();
-  return <p>{ready ? (user ? "Signed in" : "Demo available") : "Loading"}</p>;
+  return (
+    <div>
+      {ready ? "Public demo usable" : "Checking account"}
+      {user ? "signed in" : "signed out"}
+    </div>
+  );
 }
-beforeEach(() => {
-  vi.clearAllMocks();
-  mocks.subscribe.mockReturnValue({ data: { subscription: { unsubscribe: mocks.unsubscribe } } });
-});
+function mount() {
+  const client = new QueryClient();
+  return render(
+    <QueryClientProvider client={client}>
+      <AuthProvider>
+        <Demo />
+      </AuthProvider>
+    </QueryClientProvider>,
+  );
+}
 afterEach(() => {
-  cleanup();
   vi.unstubAllEnvs();
+  vi.useRealTimers();
+  vi.clearAllMocks();
 });
-it("keeps the demo available without cloud configuration or authentication requests", async () => {
-  vi.stubEnv("VITE_SUPABASE_URL", "");
-  vi.stubEnv("VITE_SUPABASE_PUBLISHABLE_KEY", "");
-  render(
-    <AuthProvider>
-      <Status />
-    </AuthProvider>,
-  );
-  expect(screen.getByText("Demo available")).toBeVisible();
-  expect(await bearerHeaders()).toEqual({});
-  expect(mocks.getUser).not.toHaveBeenCalled();
-  expect(mocks.getSession).not.toHaveBeenCalled();
-  expect(mocks.subscribe).not.toHaveBeenCalled();
-});
-it("lets public pages remain usable if the configured auth service is unreachable", async () => {
-  vi.stubEnv("VITE_SUPABASE_URL", "https://example.invalid");
-  vi.stubEnv("VITE_SUPABASE_PUBLISHABLE_KEY", "mock-public-key");
-  mocks.getUser.mockRejectedValue(new Error("Offline"));
-  const view = render(
-    <AuthProvider>
-      <Status />
-    </AuthProvider>,
-  );
-  await waitFor(() => expect(screen.getByText("Demo available")).toBeVisible());
-  view.unmount();
-  expect(mocks.unsubscribe).toHaveBeenCalledTimes(1);
+describe("public auth availability without real accounts", () => {
+  it("makes no auth calls or bearer lookup when public config is absent", async () => {
+    vi.stubEnv("VITE_SUPABASE_URL", "");
+    vi.stubEnv("VITE_SUPABASE_PUBLISHABLE_KEY", "");
+    expect(productionAuthConfigured()).toBe(false);
+    const view = mount();
+    expect(screen.getByText(/Public demo usable/)).toBeTruthy();
+    expect(await bearerHeaders()).toEqual({});
+    expect(mocks.getUser).not.toHaveBeenCalled();
+    expect(mocks.subscribe).not.toHaveBeenCalled();
+    expect(mocks.getSession).not.toHaveBeenCalled();
+    view.unmount();
+  });
+  it("preserves public usability after rejected offline auth", async () => {
+    vi.stubEnv("VITE_SUPABASE_URL", "https://auth.example.test");
+    vi.stubEnv("VITE_SUPABASE_PUBLISHABLE_KEY", "sb_publishable_test");
+    mocks.getUser.mockRejectedValue(new Error("offline"));
+    mocks.getSession.mockRejectedValue(new Error("offline"));
+    mocks.subscribe.mockReturnValue({ data: { subscription: { unsubscribe: mocks.unsubscribe } } });
+    const view = mount();
+    await waitFor(() => expect(screen.getByText(/Public demo usable/)).toBeTruthy());
+    expect(await bearerHeaders()).toEqual({});
+    view.unmount();
+    expect(mocks.unsubscribe).toHaveBeenCalled();
+  });
+  it("unblocks the public demo if auth never responds", async () => {
+    vi.stubEnv("VITE_SUPABASE_URL", "https://auth.example.test");
+    vi.stubEnv("VITE_SUPABASE_PUBLISHABLE_KEY", "sb_publishable_test");
+    mocks.getUser.mockReturnValue(new Promise(() => {}));
+    mocks.subscribe.mockReturnValue({ data: { subscription: { unsubscribe: mocks.unsubscribe } } });
+    vi.useFakeTimers();
+    const view = mount();
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(8000);
+    });
+    expect(screen.getByText(/Public demo usablesigned out/)).toBeTruthy();
+    view.unmount();
+  });
 });

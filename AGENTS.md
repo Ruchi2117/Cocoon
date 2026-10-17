@@ -23,6 +23,7 @@
 - External sharing (`share.ts`) is a user-initiated handoff logged separately from in-app notifications — Cocoon cannot observe external delivery.
 - Automatic WhatsApp alerts live in `src/lib/notify/` (provider-agnostic outbox engine + Twilio adapter) behind a `NotifyRepo` interface; production storage is provided by `src/lib/production/notify-repo.ts`, with activation off until Twilio sender/templates and durable scheduling are verified — see `src/lib/production/PRODUCTION.md`. Never simulate sends.
 - Hosted builds use the Cloudflare Nitro preset and retain the custom TanStack server entry, so deployment uses the supported runtime without replacing the source's error handling.
+- Public auth build constants are explicitly defined by Vite from the public-only connection manifest; never inject private server variables. Missing/unreachable client auth must fail closed for private actions while preserving public demo usability.
 
 
 - Private production actions live in `src/lib/production/`, never the demo adapter; verified bearer identity plus RLS keeps local role choices out of production authorization.

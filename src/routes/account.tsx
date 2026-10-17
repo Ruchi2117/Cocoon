@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { useProductionAuth } from "@/lib/production/auth";
+import { useProductionAuth, productionAuthConfigured } from "@/lib/production/auth";
 import { lovable } from "@/integrations/lovable";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -115,10 +115,17 @@ function AccountPage() {
           WhatsApp and natural AI voice are disabled under the zero-payment policy. The local demo
           remains available.
         </p>
+        {!productionAuthConfigured() && (
+          <p role="status">
+            Private accounts unavailable — public configuration is missing. The local demo remains
+            usable.
+          </p>
+        )}
         <div className="flex flex-wrap gap-3">
           {(["google", "lovable"] as const).map((provider) => (
             <Button
               key={provider}
+              disabled={busy || !productionAuthConfigured()}
               onClick={() =>
                 void run(async () => {
                   const result = await lovable.auth.signInWithOAuth(provider, {
@@ -394,4 +401,3 @@ function AccountPage() {
     </section>
   );
 }
-

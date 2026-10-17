@@ -85,6 +85,7 @@ export function LiveVoicePanel({
     const c = new AbortController();
     ctrl.current = c;
     let ended = false;
+    const current = () => ctrl.current === c && !c.signal.aborted;
     try {
       const connection = await connectLiveVoice({
         signal: c.signal,
@@ -106,11 +107,11 @@ export function LiveVoicePanel({
         },
         onClosed: () => {
           ended = true;
-          if (!c.signal.aborted && ctrl.current === c) {
+          if (current()) {
             starting.current = false;
             conn.current = null;
             setOn(false);
-            setPhase((value) => (value === "error" ? "error" : "idle"));
+            setPhase((p) => (p === "error" ? "error" : "idle"));
             setMuted(false);
             setSpeaker(true);
             audioChoices.current = { muted: false, speaker: true };
@@ -118,23 +119,26 @@ export function LiveVoicePanel({
           }
         },
         onPhase: (p) => {
-          if (!c.signal.aborted) setPhase(p);
+          if (current() && !ended) setPhase(p);
         },
         onCaption: (t) => {
-          if (!c.signal.aborted) setCaption(t);
+          if (current() && !ended) setCaption(t);
         },
         onError: (t) => {
-          if (!c.signal.aborted) setError(t);
+          if (current()) {
+            setError(t);
+            setPhase("error");
+          }
         },
       });
-      if (c.signal.aborted || ended || ctrl.current !== c) connection.close();
+      if (!current() || ended) connection.close();
       else {
         conn.current = connection;
         connection.mute(audioChoices.current.muted);
         connection.speaker(audioChoices.current.speaker);
       }
     } catch (e) {
-      if (!c.signal.aborted && ctrl.current === c) {
+      if (current()) {
         starting.current = false;
         setError(e instanceof Error ? e.message : "Voice unavailable.");
         setPhase("error");

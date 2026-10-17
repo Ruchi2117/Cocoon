@@ -1,5 +1,7 @@
 # Production voice and SOS
 
+- [x] Fix public build configuration via Vite define from a public-only canonical Cloud connection manifest (no generated clients/private keys changed). Production config evaluation confirms both public constants even without sandbox VITE env. Auth absent/offline/hung fallback and voice close/error regressions pass; full suite 198 tests, automatic build/type checks OK. Signed-out hydration/hard refresh and offline checks pass with zero errors or OAuth/provider actions; read-only hosted auth settings HTTP200 confirms Google enabled. Published bundle verification awaits user republish; no accounts/media/SOS/billing changes or publishing.
+
 - [x] Add separate phone-free, token-bound in-app guardian consent and atomic private SOS alerts with recipient-only retrieval/open/ack receipts; migration 0006 applied without accounts or personal data.
 - [x] Wire real SOS confirmation and guardian inbox with open-page-only refresh/30-second visibility-aware polling; preserve demo/design and immutable disabled paid providers.
 - [x] All 191 tests pass (including 14 synthetic in-app PostgreSQL rollback tests, 4 schema and 4 synthetic authenticated UI tests); changed-file lint and automatic build/type checks pass. Desktop/mobile signed-out disclosures verified with no provider requests or page errors. Hosted real-account flow remains unverified under no-real-accounts constraint.
