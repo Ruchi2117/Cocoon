@@ -28,3 +28,10 @@ A published-only hydration failure was caught after the initial backend deployme
 Hosted source reports 198 passing tests plus automatic build checks. These include synthetic PostgreSQL RLS/atomicity/consent tests and mocked authenticated inbox component tests. Real hosted two-user sign-in, invitation, SOS and acknowledgement verification remains pending and must be done deliberately by the account owners. No guarantees of emergency response or real-world delivery are implied. The private account entry is https://coco-safe-routes.lovable.app/account .
 
 The local copy retains the Node build preset; Lovable uses Cloudflare. Runtime public auth constants are pinned in `src/lib/production/public-auth-config.json`. Local production server handlers still require their documented server environment; use the published site for the configured account flow. Ongoing GitHub-to-Lovable automatic sync has not been established.
+
+
+## Entry-first launch
+
+Lovable source `aaffc41bc70497871daeb55a8211ebba246fb88c` adds the session-scoped entry flow from GitHub `4ad6b57`. Publication requested with deployment `a3f3fe6a-21f4-40c3-bb0e-661a0f4ee03d`. The main address shows the full-screen welcome before the world; Enter and Skip remember the choice in the current tab. Direct routes remain direct and /welcome can replay the scene. Local TypeScript, lint, build and four focused tests passed; local browser verified entry, Enter, Skip and refresh. Auth public configuration and provider cost locks were preserved.
+
+Live browser verification completed: fresh root rendered the entry after hydration without app navigation; Skip revealed the world. Preview saved at docs/previews/entry-first-live.jpg.
