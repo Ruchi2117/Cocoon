@@ -1,5 +1,8 @@
 # Production voice and SOS
 
+- [x] Upgrade Presence browser/text lifecycle, guided scripts and immersive state-reactive night room; preserve private workflows, manual recording/share and paid locks. Text-first, explicit one-turn mic, interruption/repeat, voices/rate and ephemeral summary are implemented without private reads or automatic actions.
+- [x] Verify permission/unsupported/late events/interruption/hidden lifecycle: 287 tests across 42 files pass (32 new Presence cases), changed application lint and automatic typecheck/build pass. Desktop 1280×1800/mobile 390×844/reduced-motion text → guidance → Journey → summary, SOS review and manual recorder choices pass without page errors/overflow/OAuth/provider requests. Documentation: docs/PRESENCE-ROOM.md; natural AI and real-device verification remain intentionally unavailable, no publishing.
+
 - [x] Add owner-private emergency drafts/preferences, immutable explicitly reviewed SOS snapshots and per-recipient exact history. Migration 0009 applied; hosted read-only policies confirmed. Paid locks/public auth configuration unchanged.
 - [x] Verify SOS identical/changed retry, cancellation/account switching, consent/ownership/atomicity and guardian rendering. 255 tests across 39 files pass, including 11 new rollback PostgreSQL cases; changed application lint and automatic build/type checks pass. Desktop/mobile public entry/Account/SOS/Journey hydration has zero page errors/provider/OAuth traffic. See docs/SOS-REVIEW.md.
 - [ ] Hosted signed-in SOS readback — blocked by explicit no-real-accounts/no-real-SOS-testing constraint. Synthetic PostgreSQL and mocked signed-in send/retrieve/open/ack flows verified instead; no publication.

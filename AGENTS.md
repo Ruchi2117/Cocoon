@@ -10,7 +10,7 @@
 <!-- LOVABLE:END -->
 
 - Cocoon data lives in a localStorage demo adapter (`src/lib/cocoon/store.ts`) with role access rules in `access.ts` and all mutations/incident transitions in `actions.ts` — single source of truth; swap for Lovable Cloud + RLS when a real backend is approved.
-- Routing, companion conversation and speech use provider abstractions. The default companion remains scripted/browser speech. Production Realtime voice uses authenticated server control, durable quotas and explicit consent; activation stays off until provider and durable cleanup scheduling are verified (`src/lib/production/PRODUCTION.md`). Every simulated behaviour must stay labelled.
+- Presence uses an injected generation-bound browser controller: one explicit listening turn, bounded sequential speech, no auto-resume or private mutations; ephemeral transcript prevents persistence leaks. Production voice retains authenticated quotas and consent but stays policy-disabled. See `docs/PRESENCE-ROOM.md` and production documentation; label all scripted/simulated behavior.
 - Leaflet is loaded only via `MapView` (lazy + ClientOnly) because it touches `window` at import.
 - Live geocoding/walking routes go through `src/lib/cocoon/geo.ts` (Photon + FOSSGIS OSRM foot), explicit-submit only with timeouts/throttle/cache; seeded paths are a labelled dashed fallback — public community endpoints, no keys. Never imply routes guarantee safety.
 - Demo role and actor identities are sessionStorage per tab; shared records stay in localStorage. Persisted records are validated by `persistence.ts`.

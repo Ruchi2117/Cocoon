@@ -6184,3 +6184,190 @@ header {
 .voice-trip-choice input { margin-top: .25rem; }
 .cocoon-room .live-voice-panel .voice-brief textarea { background: #24252d; color: #fff4ef; border-color: #80747b; }
 .cocoon-room .live-voice-panel .voice-brief textarea::placeholder { color: #cdbfc6; opacity: 1; }
+
+/* Presence: stateful listening room. All new color roles are theme tokens. */
+:root {
+  --room-night: oklch(0.19 0.018 340);
+  --room-wall: oklch(0.25 0.028 340);
+  --room-panel: oklch(0.27 0.022 340);
+  --room-paper: oklch(0.95 0.018 45);
+  --room-muted: oklch(0.78 0.025 30);
+  --room-edge: oklch(0.5 0.035 340);
+  --room-red: oklch(0.62 0.18 20);
+  --room-glow: oklch(0.81 0.09 65);
+  --room-wing: oklch(0.55 0.095 355);
+  --room-wing-inset: oklch(0.72 0.075 35);
+  --room-window: oklch(0.23 0.025 190);
+  --room-quiet: oklch(0.7 0.06 155);
+  --room-shadow: 0 12px 40px color-mix(in oklab, var(--room-night) 65%, transparent);
+  --room-light: linear-gradient(180deg, transparent 12%, color-mix(in oklab, var(--room-glow) 5%, transparent) 66%, transparent);
+}
+.room-presence { background: var(--room-night); }
+.night-room { --background: var(--room-night); --foreground: var(--room-paper); --card: var(--room-panel); --card-foreground: var(--room-paper); --muted: var(--room-panel); --muted-foreground: var(--room-muted); --border: var(--room-edge); --input: var(--room-edge); --primary: var(--room-red); --primary-foreground: var(--room-paper); --accent: var(--room-wall); --accent-foreground: var(--room-paper); --ring: var(--room-glow); color: var(--room-paper); padding-bottom: 36px; }
+.night-room :is(h1,h2,h3,p,span,button,a) { letter-spacing: 0; }
+.night-room :is(button,a,input,textarea,select,summary):focus-visible { outline: 2px solid var(--room-glow); outline-offset: 5px; }
+.night-heading { display: flex; justify-content: space-between; align-items: end; gap: 28px; padding: 24px 0 32px; }
+.night-eyebrow { font-size: 10px; text-transform: uppercase; font-weight: 600; color: var(--room-muted); }
+.night-heading h1 { font-family: var(--font-poster); font-size: 76px; line-height: .98; font-weight: 800; margin-top: 18px; }
+.night-heading h1 em { font-style: normal; color: var(--room-red); }
+.night-heading-side p { color: var(--room-muted); font-size: 14px; line-height: 1.7; margin-bottom: 20px; }
+.night-heading-side nav { display: flex; align-items: center; gap: 18px; }
+.night-heading-side nav a { display: flex; gap: 5px; align-items: center; font-size: 13px; min-height: 44px; }
+.night-room button { min-height: 44px; border-radius: 6px; cursor: pointer; }
+.listening-room { position: relative; isolation: isolate; background: var(--room-wall); overflow: hidden; min-height: 660px; border-top: 1px solid var(--room-edge); border-bottom: 1px solid var(--room-edge); display: flex; flex-direction: column; }
+.room-architecture { position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: .7; transition: opacity .5s; }
+.room-architecture svg { width: 100%; height: 100%; }
+.room-window { fill: var(--room-window); stroke: var(--room-edge); stroke-width: 2; }
+.room-tracery { fill: none; stroke: var(--room-edge); stroke-width: 1; opacity: .6; }
+.room-skyline { fill: none; stroke: var(--room-quiet); stroke-width: 1.5; opacity: .35; }
+.room-curtain { fill: none; stroke: var(--room-red); stroke-width: 14; opacity: .17; }
+.room-stars { stroke: var(--room-glow); stroke-width: 1; opacity: .6; }
+.room-table { fill: none; stroke: var(--room-muted); stroke-width: 2; opacity: .25; }
+.room-topline { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 24px; font-size: 11px; }
+.room-topline > span { display: flex; align-items: center; gap: 7px; }
+.room-topline i { width: 6px; height: 6px; border-radius: 50%; background: var(--room-quiet); }
+.room-topline > div { display: flex; gap: 3px; }
+.room-center { text-align: center; flex: 1; padding: 0 24px 20px; background: var(--room-light); }
+.lantern-buddy { width: min(380px,100%); margin: 0 auto; height: 298px; }
+.night-room .lantern-figure { width: 100%; height: 100%; padding: 0; min-height: 0; display: block; background: transparent; border: 0; }
+.night-room .lantern-figure:disabled { opacity: 1; cursor: default; }
+.lantern-buddy svg { width: 100%; height: 100%; overflow: visible; }
+.lantern-thread { fill: none; stroke: var(--room-edge); stroke-width: 2; }
+.moth-body { animation: moth-float 5s ease-in-out infinite; transform-origin: 220px 170px; }
+.moth-wing { transform-box: view-box; }
+.moth-wing-left { transform-origin: 188px 195px; animation: wing-left 5s ease-in-out infinite; }
+.moth-wing-right { transform-origin: 252px 195px; animation: wing-right 5s ease-in-out infinite; }
+.wing-outer { fill: var(--room-wing); stroke: var(--room-wing-inset); stroke-width: 1.5; }
+.wing-inner { fill: var(--room-wing-inset); opacity: .6; }
+.wing-vein { fill: none; stroke: var(--room-glow); opacity: .35; }
+.wing-eye { fill: var(--room-night); stroke: var(--room-glow); stroke-width: 2; }
+.moth-antenna { fill: none; stroke: var(--room-glow); stroke-width: 3; stroke-linecap: round; }
+.moth-antenna-leaf { fill: var(--room-quiet); }
+.moth-shell { fill: var(--room-glow); stroke: var(--room-paper); stroke-width: 1; }
+.moth-crown { fill: var(--room-wing-inset); }
+.moth-face { fill: var(--room-night); }
+.moth-eyes { fill: none; stroke: var(--room-paper); stroke-width: 3; stroke-linecap: round; animation: moth-blink 7s infinite; transform-origin: 220px 180px; }
+.moth-smile { fill: none; stroke: var(--room-paper); stroke-width: 2; }
+.lantern-window { fill: var(--room-paper); transition: fill .3s, opacity .3s; }
+.lantern-rib { fill: none; stroke: var(--room-wing-inset); stroke-width: 3; }
+.moth-feet { fill: none; stroke: var(--room-glow); stroke-width: 3; stroke-linecap: round; }
+.lantern-pool { fill: none; stroke: var(--room-glow); stroke-width: 2; opacity: .25; }
+.lantern-buddy[data-phase=speaking] .lantern-window { animation: lantern-speaking 1.1s ease-in-out infinite; }
+.lantern-buddy[data-phase=listening] .moth-body { animation: moth-listen 2s ease-in-out infinite; }
+.lantern-buddy[data-phase=thinking] .moth-eyes { animation: moth-blink 1.5s infinite; }
+.lantern-buddy[data-phase=ended] .lantern-window { opacity: .4; }
+.lantern-buddy[data-phase=error] .lantern-window { fill: var(--room-wing-inset); }
+.room-status { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 12px; color: var(--room-glow); min-height: 22px; }
+.room-status-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.room-caption { max-width: 600px; margin: 17px auto 0; min-height: 95px; max-height: 145px; overflow-y: auto; font-size: 17px; line-height: 1.65; }
+.room-console { position: relative; padding: 14px 24px 22px; background: color-mix(in oklab,var(--room-night) 88%,transparent); border-top: 1px solid color-mix(in oklab,var(--room-edge) 45%,transparent); }
+.room-mode { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.room-mode button { color: var(--room-muted); }
+.room-mode button[aria-pressed=true] { color: var(--room-paper); background: var(--room-panel); border-bottom: 2px solid var(--room-red); }
+.room-call-controls { display: flex; gap: 8px; justify-content: center; align-items: center; flex-wrap: wrap; margin-top: 16px; }
+.room-call-controls button { flex-shrink: 0; }
+.room-notice { font-size: 12px; color: var(--room-glow); max-width: 600px; margin: 14px auto 0; text-align: center; line-height: 1.6; }
+.room-settings { max-width: 680px; margin: 20px auto 0; padding-top: 18px; border-top: 1px solid var(--room-edge); display: grid; grid-template-columns: 1fr 1fr; gap: 20px; font-size: 12px; }
+.room-settings label { display: flex; flex-direction: column; gap: 12px; }
+.room-settings select { padding: 10px; min-width: 0; width: 100%; color: var(--room-paper); background: var(--room-panel); border: 1px solid var(--room-edge); border-radius: 4px; }
+.room-settings input { accent-color: var(--room-red); }
+.room-settings p { grid-column: 1/-1; color: var(--room-muted); }
+.room-conversation { display: grid; grid-template-columns: 300px 1fr; padding: 35px 0; gap: 45px; border-bottom: 1px solid var(--room-edge); }
+.intent-rail > div { margin-top: 20px; display: flex; flex-direction: column; }
+.intent-rail button { justify-content: start; padding: 17px 10px; height: auto; white-space: normal; text-align: left; border-bottom: 1px solid var(--room-edge); border-radius: 0; gap: 13px; }
+.intent-rail button > svg:last-child { margin-left: auto; flex-shrink: 0; }
+.intent-rail button[aria-pressed=true] { color: var(--room-glow); border-left: 2px solid var(--room-red); background: var(--room-wall); }
+.room-local-note { color: var(--room-muted); font-size: 11px; line-height: 1.7; margin-top: 24px; }
+.transcript-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 20px; }
+.transcript-heading h2 { font-family: var(--font-display); font-size: 24px; }
+.room-transcript { max-height: 340px; min-height: 130px; overflow-y: auto; scrollbar-color: var(--room-edge) transparent; padding-right: 12px; }
+.transcript-empty { color: var(--room-muted); font-size: 14px; padding: 15px 0; }
+.room-turn { padding: 13px 0 18px; border-bottom: 1px solid color-mix(in oklab,var(--room-edge) 40%,transparent); }
+.room-turn > span { font-size: 10px; color: var(--room-glow); }
+.room-turn > p { font-size: 14px; line-height: 1.7; margin-top: 8px; overflow-wrap: anywhere; }
+.room-turn[data-from=you] { padding-left: 20px; border-left: 2px solid var(--room-red); }
+.room-turn[data-from=you] > span { color: var(--room-muted); }
+.room-reply-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 12px; }
+.room-reply-actions a { font-size: 12px; text-decoration: underline; min-height: 44px; display: flex; align-items: center; }
+.room-compose { display: flex; align-items: end; gap: 12px; margin-top: 20px; }
+.room-compose textarea { color: var(--room-paper); background: var(--room-panel); border: 1px solid var(--room-edge); border-radius: 6px; padding: 13px; width: 100%; min-width: 0; font-size: 14px; resize: vertical; min-height: 78px; }
+.room-compose textarea::placeholder { color: var(--room-muted); }
+.room-compose button { width: 48px; height: 48px; flex-shrink: 0; }
+.room-summary { border-top: 1px solid var(--room-edge); margin-top: 28px; padding: 25px 0 0; }
+.room-summary h3 { font-size: 21px; margin-top: 10px; }
+.room-summary p:not(.night-eyebrow) { margin-top: 10px; font-size: 14px; line-height: 1.7; }
+.room-summary > div { display: flex; flex-wrap: wrap; gap: 20px; font-size: 12px; margin: 15px 0; text-decoration: underline; }
+.room-summary small { font-size: 11px; color: var(--room-muted); }
+.room-boundaries { color: var(--room-muted); font-size: 12px; padding: 24px 0; }
+.room-boundaries summary { cursor: pointer; min-height: 44px; display: list-item; padding: 10px 0; }
+.room-boundaries p { max-width: 78ch; line-height: 1.8; margin-bottom: 12px; }
+.night-room .support-workspace { background: transparent; color: var(--room-paper); border-top: 1px solid var(--room-edge); border-radius: 0; box-shadow: none; }
+.night-room .support-start { padding: 30px 0; }
+.night-room .support-start :is(p,small,.eyebrow) { color: var(--room-muted); }
+.night-room .support-start h2 { font-size: 36px; }
+.night-room .support-start h2 em { color: var(--room-red); }
+.night-room .support-start-actions button { color: var(--room-paper); background: var(--room-panel); border-color: var(--room-edge); font-size: 12px; }
+.night-room .support-options { background: var(--room-wall); color: var(--room-paper); padding: 22px; }
+.night-room .support-options :is(input,select,textarea) { background: var(--room-panel); color: var(--room-paper); border-color: var(--room-edge); }
+.night-room .support-options :is(p,small,label) { color: var(--room-muted); }
+.night-room .support-options button { background: var(--room-panel); color: var(--room-paper); border-color: var(--room-edge); }
+.night-room .support-options a { color: var(--room-glow); }
+.night-room .room-sos-dock { position: fixed; bottom: 84px; right: max(18px, calc((100vw - 1120px) / 2)); z-index: 1100; box-shadow: var(--room-shadow); min-height: 48px; }
+.room-sos-dialog { z-index: 1400; }
+body:has(.room-sos-dialog) [data-slot=dialog-overlay],body:has(.room-sos-dialog) [data-state=open][class*="fixed inset-0"] { z-index: 1350; }
+.night-room[data-dim=true] .room-architecture { opacity: .3; }
+.night-room[data-dim=true] .lantern-window { fill: var(--room-glow); }
+.night-room[data-still=true] :is(.moth-body,.moth-wing,.moth-eyes,.lantern-window) { animation: none; }
+@keyframes moth-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+@keyframes moth-listen { 0%,100% { transform: rotate(-2deg); } 50% { transform: rotate(2deg); } }
+@keyframes wing-left { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(-5deg); } }
+@keyframes wing-right { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(5deg); } }
+@keyframes moth-blink { 0%,43%,47%,100% { transform: scaleY(1); } 45% { transform: scaleY(.12); } }
+@keyframes lantern-speaking { 0%,100% { opacity: .75; } 50% { opacity: 1; } }
+@media (min-width:768px) { .night-room .room-sos-dock { bottom: 24px; } }
+@media (max-width:700px) {
+ .night-heading { display: block; padding-top: 12px; }
+ .night-heading h1 { font-size: 52px; }
+ .night-heading-side { margin-top: 24px; }
+ .night-heading-side p { font-size: 12px; margin-bottom: 10px; }
+ .night-heading-side nav { gap: 24px; }
+ .listening-room { min-height: 580px; }
+ .room-topline { padding: 10px 12px; font-size: 10px; }
+ .room-topline button { width: 36px; }
+ .room-center { padding: 0 15px 18px; }
+ .lantern-buddy { height: 240px; }
+ .room-caption { font-size: 14px; min-height: 90px; max-height: 145px; }
+ .room-console { padding: 12px 10px 18px; }
+ .room-mode { gap: 3px; }
+ .room-mode button { padding-left: 10px; padding-right: 10px; font-size: 12px; }
+ .room-call-controls { gap: 7px; }
+ .room-call-controls button { font-size: 12px; padding: 10px; }
+ .room-call-controls button[data-size=icon] { width: 42px; }
+ .room-settings { grid-template-columns: 1fr; gap: 16px; padding: 18px 8px 0; }
+ .room-conversation { grid-template-columns: 1fr; gap: 26px; padding: 25px 0; }
+ .intent-rail > div { margin-top: 12px; }
+ .intent-rail button { padding: 12px 10px; }
+ .room-local-note { margin-top: 14px; }
+ .transcript-heading h2 { font-size: 22px; }
+ .night-room .support-start { padding: 25px 0; }
+ .night-room .support-options { padding: 16px; }
+ .room-sos-dialog { max-width: calc(100vw - 24px); padding: 20px; }
+}
+@media (prefers-reduced-motion:reduce) {
+ .night-room :is(.moth-body,.moth-wing,.moth-eyes,.lantern-window) { animation: none; }
+ .night-room * { scroll-behavior: auto; transition-duration: 0s; }
+}
+/* Scoped overrides outrank the older shared room presentation. */
+.cocoon-room .night-room .room-compose textarea,
+.cocoon-room .night-room .room-settings select,
+.cocoon-room .night-room .support-options :is(input,textarea,select) { background: var(--room-panel); color: var(--room-paper); border-color: var(--room-edge); }
+.cocoon-room .night-room :is(input,textarea)::placeholder { color: var(--room-muted); opacity: 1; }
+.cocoon-room .night-room .support-start { background: transparent; border-radius: 0; }
+.cocoon-room .night-room .support-workspace button:nth-child(n) { background: var(--room-panel); color: var(--room-paper); border-color: var(--room-edge); }
+.cocoon-room .night-room button[data-variant=outline] { background: var(--room-panel); color: var(--room-paper); }
+.room-support-nav { position: sticky; top: 70px; z-index: 1050; display: flex; align-items: center; justify-content: flex-end; gap: 20px; background: var(--room-night); padding: 8px 0; border-bottom: 1px solid var(--room-edge); }
+.room-support-nav a { display: flex; gap: 4px; align-items: center; min-height: 44px; font-size: 12px; }
+.night-room .room-support-nav button { min-width: 82px; }
+.room-transcript { scroll-padding-top: 150px; }
+.night-room :is(.room-conversation,#presence-desk,.room-summary) { scroll-margin-top: 150px; }
+@media (max-width:700px) { .room-support-nav { top: 78px; justify-content: space-between; padding: 6px 0; } .night-heading { padding-top: 22px; } }

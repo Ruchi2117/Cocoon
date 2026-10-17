@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
 import {
   CaptureSession,
@@ -15,16 +16,15 @@ type LocalCapture = { id: string; file: File; url: string };
 type BatteryHandle = EventTarget & { level: number; charging: boolean };
 
 export function SupportWorkspace({
-  onStartSupport,
-  onStopSupport,
   stopSignal,
-  voiceLabel,
+  openSignal = 0,
 }: {
-  onStartSupport: () => boolean;
-  onStopSupport: () => void;
   stopSignal: number;
-  voiceLabel: string;
+  openSignal?: number;
 }) {
+  useEffect(() => {
+    if (openSignal > 0) setOpen(true);
+  }, [openSignal]);
   const [open, setOpen] = useState(false),
     [contacts, setContacts] = useState<KitContact[]>([]),
     [contact, setContact] = useState(0);
@@ -34,8 +34,7 @@ export function SupportWorkspace({
   const [mode, setMode] = useState<CaptureMode>("audio"),
     [battery, setBattery] = useState<BatteryState | null>(null),
     [saving, setSaving] = useState(true),
-    [periodic, setPeriodic] = useState(false),
-    [withSupport, setWithSupport] = useState(false);
+    [periodic, setPeriodic] = useState(false);
   const [pending, setPending] = useState(false),
     [recording, setRecording] = useState(false),
     [stream, setStream] = useState<MediaStream | null>(null),
@@ -270,33 +269,13 @@ export function SupportWorkspace({
             <em>AT A TIME.</em>
           </h2>
           <p>
-            Start a calm voice check-in. Keep a person you trust and the essentials within reach.
+            Keep a person you trust within reach. Choose a local recorder or share a note yourself.
           </p>
-          <small>{voiceLabel} · AI, not a human responder</small>
+          <small>Manual recording & sharing · separate from the companion</small>
         </div>
         <div className="support-start-actions">
-          <button
-            onClick={() => {
-              setOpen(true);
-              const started = onStartSupport();
-              if (withSupport && started) void startCapture();
-              if (!started)
-                setNotice(
-                  "Voice did not start. Recording has not been started by this button. You can still choose a contact or start a local recorder separately.",
-                );
-            }}
-          >
-            Start support voice
-          </button>
-          <button
-            onClick={() => {
-              stopCapture();
-              onStopSupport();
-            }}
-          >
-            End support & recording
-          </button>
-          <button
+          <Button
+            variant="outline"
             onClick={() => {
               if (open) stopCapture();
               setOpen(!open);
@@ -305,7 +284,7 @@ export function SupportWorkspace({
             aria-controls="support-options"
           >
             {open ? "Close support choices" : "Recording & sharing choices"}
-          </button>
+          </Button>
           {urgent ? (
             <a href={`tel:${urgent.number}`}>Immediate danger? Call {urgent.number}</a>
           ) : (
@@ -370,8 +349,12 @@ export function SupportWorkspace({
                 />
               </label>
               <div className="support-inline-actions">
-                <button onClick={() => void shareNote()}>Choose recipient & share note</button>
-                <button onClick={() => void copyNote()}>Copy note</button>
+                <Button variant="outline" onClick={() => void shareNote()}>
+                  Choose recipient & share note
+                </Button>
+                <Button variant="outline" onClick={() => void copyNote()}>
+                  Copy note
+                </Button>
               </div>
               <p className="source-standard">
                 The share sheet does not preselect a saved contact. Review the recipient before
@@ -411,14 +394,6 @@ export function SupportWorkspace({
                   />{" "}
                   Prefer audio below 20% battery; stop capture at 10%
                 </label>
-                <label className="support-check">
-                  <input
-                    type="checkbox"
-                    checked={withSupport}
-                    onChange={(event) => setWithSupport(event.target.checked)}
-                  />{" "}
-                  Also start my chosen recorder when I press Start support voice
-                </label>
                 {mode === "video" && (
                   <label className="support-check">
                     <input
@@ -432,14 +407,17 @@ export function SupportWorkspace({
               </div>
               <div className="support-inline-actions">
                 {recording || pending ? (
-                  <button onClick={stopCapture}>
+                  <Button variant="outline" onClick={stopCapture}>
                     {pending ? "Cancel permission request" : "Stop & keep clip"}
-                  </button>
+                  </Button>
                 ) : (
-                  <button onClick={() => void startCapture()}>Start {plan.mode} recording</button>
+                  <Button variant="outline" onClick={() => void startCapture()}>
+                    Start {plan.mode} recording
+                  </Button>
                 )}
                 {recording && recordingMode.current === "video" && (
-                  <button
+                  <Button
+                    variant="outline"
                     onClick={() => {
                       if (fileRef.current.length >= 3) {
                         setNotice(
@@ -458,7 +436,7 @@ export function SupportWorkspace({
                     }}
                   >
                     Take a photo
-                  </button>
+                  </Button>
                 )}
               </div>
               {pending && (
@@ -514,10 +492,12 @@ export function SupportWorkspace({
                     <a href={file.url} download={file.file.name}>
                       Download
                     </a>
-                    <button onClick={() => void shareFile(file.file)}>
+                    <Button variant="outline" onClick={() => void shareFile(file.file)}>
                       Choose recipient & share file
-                    </button>
-                    <button onClick={() => remove(file.id)}>Remove local capture</button>
+                    </Button>
+                    <Button variant="outline" onClick={() => remove(file.id)}>
+                      Remove local capture
+                    </Button>
                   </div>
                 </article>
               ))}

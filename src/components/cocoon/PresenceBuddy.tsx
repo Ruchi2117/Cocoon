@@ -1,176 +1,60 @@
-import { useId, useRef, useState } from "react";
-import { useHydrated } from "@tanstack/react-router";
-import { motion, useInView, useReducedMotion } from "motion/react";
-import type { CallPhase } from "./art";
-/** A small lantern moth: expressive state, rather than a claim of a human on the call. */
+import type { SessionPhase } from "@/lib/cocoon/browser-session";
+import { Button } from "@/components/ui/button";
+/** Lantern moth gestures follow call states, never audio levels or unseen sensors. */
 export function PresenceBuddy({
   phase,
   onInterrupt,
 }: {
-  phase: CallPhase;
+  phase: SessionPhase;
   onInterrupt?: () => void;
 }) {
-  const id = useId().replaceAll(":", "");
-  const ref = useRef<HTMLDivElement>(null);
-  const visible = useInView(ref);
-  const reducedPreference = useReducedMotion();
-  const hydrated = useHydrated();
-  const reduced = hydrated && reducedPreference;
-  const [still, setStill] = useState(false);
-  const active = visible && !reduced && !still;
-  const talking = phase === "speaking",
-    listening = phase === "listening",
-    thinking = phase === "thinking" || phase === "connecting";
   return (
-    <div className="presence-buddy" ref={ref} data-phase={phase}>
-      <button
-        className="buddy-figure-button"
-        disabled={!talking || !onInterrupt}
+    <div className="lantern-buddy" data-phase={phase}>
+      <Button
+        variant="ghost"
+        className="lantern-figure"
+        disabled={phase !== "speaking"}
         onClick={onInterrupt}
-        aria-label={talking ? "Interrupt companion speech" : "Animated companion · decorative"}
+        aria-label={phase === "speaking" ? "Stop companion speaking" : "Lantern moth companion"}
+        title={phase === "speaking" ? "Stop speaking" : "Lantern moth"}
       >
-        <svg viewBox="0 0 440 310" aria-hidden="true">
-          <defs>
-            <radialGradient id={`${id}halo`}>
-              <stop stopColor="#c0dfbc" stopOpacity=".3" />
-              <stop offset="1" stopColor="#c0dfbc" stopOpacity="0" />
-            </radialGradient>
-            <linearGradient id={`${id}body`} x2="0" y2="1">
-              <stop stopColor="#e6e5ce" />
-              <stop offset="1" stopColor="#acc7b4" />
-            </linearGradient>
-          </defs>
-          <circle cx="220" cy="150" r="145" fill={`url(#${id}halo)`} />
-          {[95, 125, 150].map((r, i) => (
-            <motion.ellipse
-              key={r}
-              cx="220"
-              cy="155"
-              rx={r}
-              ry={r * 0.62}
-              fill="none"
-              stroke="#bed8ca"
-              strokeWidth="1"
-              animate={
-                active
-                  ? {
-                      opacity: talking ? [0.1, 0.5, 0.1] : [0.08, 0.2, 0.08],
-                      scale: talking ? [1, 1.08, 1] : [1, 1.02, 1],
-                    }
-                  : { opacity: 0.15 }
-              }
-              transition={{ duration: talking ? 1.4 : 5, delay: i * 0.3, repeat: Infinity }}
-            />
-          ))}
-          <motion.ellipse
-            cx="220"
-            cy="270"
-            rx="57"
-            ry="9"
-            fill="#102936"
-            animate={active ? { scaleX: [1, 0.8, 1], opacity: [0.5, 0.3, 0.5] } : {}}
-            transition={{ duration: 4, repeat: Infinity }}
-          />
-          <motion.g
-            animate={
-              active
-                ? { y: [0, -9, 0], rotate: listening ? [-3, 3, -3] : [0, 1, 0] }
-                : { y: 0, rotate: 0 }
-            }
-            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-            style={{ transformOrigin: "220px 160px" }}
-          >
-            <motion.path
-              d="M180 160Q55 65 90 185q20 64 101 31Z"
-              fill="#b6aacd"
-              stroke="#ddd0e2"
-              strokeWidth="2"
-              animate={active ? { rotate: [0, -7, 0] } : { rotate: 0 }}
-              transition={{ duration: listening ? 1 : 3, repeat: Infinity }}
-              style={{ transformOrigin: "190px 180px" }}
-            />
-            <motion.path
-              d="M260 160Q385 65 350 185q-20 64-101 31Z"
-              fill="#b6aacd"
-              stroke="#ddd0e2"
-              strokeWidth="2"
-              animate={active ? { rotate: [0, 7, 0] } : { rotate: 0 }}
-              transition={{ duration: listening ? 1 : 3, repeat: Infinity }}
-              style={{ transformOrigin: "250px 180px" }}
-            />
-            <path
-              d="M114 153q25 33 61 38m150-38q-25 33-61 38"
-              stroke="#e1d6e7"
-              strokeWidth="2"
-              fill="none"
-            />
-            <path
-              d="M180 135q-27-50-4-65m84 65q27-50 4-65"
-              stroke="#bfd2bb"
-              strokeWidth="4"
-              fill="none"
-              strokeLinecap="round"
-            />
-            <circle cx="176" cy="70" r="7" fill="#f1d1a0" />
-            <circle cx="264" cy="70" r="7" fill="#f1d1a0" />
-            <path d="M159 153q0-54 61-54t61 54v40q0 58-61 58t-61-58Z" fill={`url(#${id}body)`} />
-            <rect x="175" y="138" width="90" height="58" rx="26" fill="#284b56" />
-            <motion.g
-              animate={
-                active ? { scaleY: thinking ? [1, 0.12, 1] : [1, 1, 0.1, 1, 1] } : { scaleY: 1 }
-              }
-              transition={{
-                duration: thinking ? 2 : 6,
-                repeat: Infinity,
-                ...(thinking ? {} : { times: [0, 0.43, 0.45, 0.47, 1] }),
-              }}
-              style={{ transformOrigin: "220px 160px" }}
-            >
+        <svg viewBox="0 0 440 370" aria-hidden="true">
+          <path className="lantern-thread" d="M220 0v57m-14 0h28m-14 0v20" />
+          <g className="moth-body">
+            <g className="moth-wing moth-wing-left">
+              <path className="wing-outer" d="M189 168C155 98 54 68 51 117c-4 75 46 140 133 127Z" />
+              <path className="wing-inner" d="M176 177c-48-53-90-53-94-38-5 26 36 79 83 77Z" />
+              <path className="wing-vein" d="m65 121 110 84m-75-96 82 81m-99-9 83 38" />
+              <path className="wing-eye" d="M94 140q16-28 40 0-13 27-40 0Z" />
+            </g>
+            <g className="moth-wing moth-wing-right">
               <path
-                d="M194 158q5-6 10 0m32 0q5-6 10 0"
-                stroke="#e2e7d1"
-                strokeWidth="4"
-                fill="none"
-                strokeLinecap="round"
+                className="wing-outer"
+                d="M251 168C285 98 386 68 389 117c4 75-46 140-133 127Z"
               />
-            </motion.g>
-            <motion.path
-              d="M211 176q9 8 18 0"
-              fill={talking ? "#d7e5ce" : "none"}
-              stroke="#d7e5ce"
-              strokeWidth="2"
-              animate={
-                active && talking
-                  ? { d: ["M211 176q9 8 18 0", "M214 173q6 18 12 0Z", "M211 176q9 8 18 0"] }
-                  : {}
-              }
-              transition={{ duration: 0.5, repeat: Infinity }}
+              <path className="wing-inner" d="M264 177c48-53 90-53 94-38 5 26-36 79-83 77Z" />
+              <path className="wing-vein" d="m375 121-110 84m75-96-82 81m99-9-83 38" />
+              <path className="wing-eye" d="M346 140q-16-28-40 0 13 27 40 0Z" />
+            </g>
+            <path className="moth-antenna" d="M197 118q-34-41-27-56m73 56q34-41 27-56" />
+            <path
+              className="moth-antenna-leaf"
+              d="M171 80q-34-17-22-38 24 6 22 38m98 0q34-17 22-38-24 6-22 38"
             />
-            <path d="M198 217q22 13 44 0" stroke="#7c9e8c" strokeWidth="2" fill="none" />
-            <circle cx="220" cy="225" r="8" fill="#f2cc94" />
-          </motion.g>
-          {thinking &&
-            [0, 1, 2].map((i) => (
-              <motion.circle
-                key={i}
-                cx={201 + i * 19}
-                cy="285"
-                r="3"
-                fill="#d5dfc5"
-                animate={active ? { opacity: [0.2, 1, 0.2], y: [0, -4, 0] } : { opacity: 0.5 }}
-                transition={{ duration: 1.2, delay: i * 0.2, repeat: Infinity }}
-              />
-            ))}
+            <path className="moth-shell" d="M163 154q0-50 57-50t57 50v70q0 56-57 56t-57-56Z" />
+            <path className="moth-crown" d="M170 145q50-35 100 0l-6 19h-88Z" />
+            <rect className="moth-face" x="181" y="159" width="78" height="45" rx="20" />
+            <g className="moth-eyes">
+              <path d="M194 180q5-6 10 0m32 0q5-6 10 0" />
+            </g>
+            <path className="moth-smile" d="M214 190q6 5 12 0" />
+            <path className="lantern-window" d="M181 215h78v27q-39 34-78 0Z" />
+            <path className="lantern-rib" d="M197 216v39m23-39v48m23-48v39m-69-22h92" />
+            <path className="moth-feet" d="M204 278l-7 19m39-19 7 19m-46 0h-11m57 0h11" />
+          </g>
+          <path className="lantern-pool" d="M110 331q110-19 220 0m-190 10q80-12 160 0" />
         </svg>
-      </button>
-      <button
-        className="buddy-motion-toggle"
-        onClick={() => setStill(!still)}
-        aria-pressed={still || !!reduced}
-        disabled={!!reduced}
-      >
-        {reduced ? "Reduced motion" : still ? "Wake the wings" : "Rest the wings"}
-      </button>
+      </Button>
     </div>
   );
 }
