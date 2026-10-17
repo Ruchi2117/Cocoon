@@ -131,8 +131,8 @@ export function EmergencyAccess() {
           dispatch.
         </p>
         <p className="text-sm">
-          <Link to="/kit" hash="sos-delivery" onClick={close}>
-            SOS recipient preferences & delivery status ↗
+          <Link to="/account" onClick={close}>
+            Real in-app guardian connections & inbox status ↗
           </Link>
         </p>
         <ProductionSOS />
@@ -247,4 +247,3 @@ export function EmergencyAccess() {
     </>
   );
 }
-

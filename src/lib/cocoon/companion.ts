@@ -74,13 +74,13 @@ export const demoProvider: ConversationProvider = {
     const q = input.toLowerCase();
     if (isExplicitSos(q)) {
       return {
-        text: `${T.ok} Open SOS below and confirm to create a demo alert. I can't contact police or emergency services. ${emergencyGuidance(country)}`,
+        text: `${T.ok} Open SOS below: sign in and explicitly confirm opted-in guardians for a real private in-app alert, or choose the separate local demo. Guardians must open their inbox; there is no background or external delivery. I cannot send it for you or contact police or emergency services. ${emergencyGuidance(country)}`,
         actions: ["sos"],
       };
     }
     if (/\b(?:what|who|how).*(?:danger|emergency|police|authority)|\bemergency number\b/.test(q))
       return {
-        text: `${emergencyGuidance(country)} In Safety Kit you can also keep a campus/security contact and a trusted person's number. Cocoon's SOS is currently a demo, separate from a real emergency call.`,
+        text: `${emergencyGuidance(country)} In Safety Kit you can also keep a campus/security contact and a trusted person's number. Cocoon has real signed-in in-app guardian SOS and a separate local demo. Neither contacts authorities or sends WhatsApp; a guardian must open their inbox.`,
       };
     if (
       /\b(?:i(?:'m| am| have)?|we(?:'re| are| have)?) (?:arrived|home|at (?:the )?gate)|\breached (?:home|my destination|the hostel)\b/.test(
@@ -90,7 +90,7 @@ export const demoProvider: ConversationProvider = {
       return {
         text: trip
           ? `Glad you've made it. Open your journey and tap “I've arrived” to finish and stop sharing. Your SOS${incidentOpen ? " is still open; resolve or cancel it separately when appropriate" : " remains available if needed"}.`
-          : "Glad you've arrived. There isn't an active trip to close. Take a moment to settle in.",
+          : "Glad you've arrived. I do not see an active local demo trip. If you started a real private journey, open Journey and confirm arrival there; I cannot read or change private journeys. Take a moment to settle in.",
       };
     if (CONCERN.test(q)) {
       const g =
@@ -156,7 +156,7 @@ export const demoProvider: ConversationProvider = {
         text:
           trip?.sharing === "active" && guardianName
             ? `${guardianName} can see your destination, ETA and latest simulated location until the trip ends. They don't see our conversation.`
-            : "Trip sharing is off right now.",
+            : "Local demo sharing is off. Real private journey status is separate in Journey; I cannot read it or share our conversation.",
         actions: trip ? ["share_eta"] : undefined,
       };
     }
@@ -164,7 +164,7 @@ export const demoProvider: ConversationProvider = {
       return {
         text: trip
           ? `${T.ok} Want to log a check-in${trip.sharing === "active" && guardianName ? ` for ${guardianName}` : " on your trip"}?`
-          : "Good to hear. Start a journey first if you'd like to log check-ins.",
+          : "Good to hear. Start a journey or open Journey to manually check in on an existing real private journey. The local demo is separate; I cannot make private check-ins for you.",
         actions: trip ? ["check_in"] : [],
       };
     if (/(hi|hello|hey)\b/.test(q))

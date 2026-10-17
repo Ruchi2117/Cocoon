@@ -1,6 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { InAppGuardians } from "./InAppGuardians";
 
 const mocks = vi.hoisted(() => ({
@@ -10,6 +10,8 @@ const mocks = vi.hoisted(() => ({
   revoke: vi.fn(),
   retrieve: vi.fn(),
   open: vi.fn(),
+  journeys: vi.fn(),
+  journeyConsent: vi.fn(),
   user: { id: "20202020-2020-4020-8020-202020202020" } as { id: string } | null,
 }));
 vi.mock("@tanstack/react-start", () => ({ useServerFn: (fn: unknown) => fn }));
@@ -24,6 +26,10 @@ vi.mock("@/lib/production/inapp.functions", () => ({
   retrieveInAppInbox: mocks.retrieve,
   openInAppAlert: mocks.open,
 }));
+vi.mock("@/lib/production/journey.functions", () => ({
+  readPrivateJourneys: mocks.journeys,
+  setJourneyConsent: mocks.journeyConsent,
+}));
 const alert = {
   id: "60606060-6060-4060-8060-606060606060",
   traveller_name: "Synthetic traveller",
@@ -34,6 +40,9 @@ const alert = {
   read_at: null,
   acknowledged_at: null,
 };
+beforeEach(() => {
+  mocks.journeys.mockResolvedValue({ serverNow: "2026-10-17T20:00:00Z", journeys: [] });
+});
 afterEach(() => {
   vi.useRealTimers();
   vi.restoreAllMocks();
@@ -41,6 +50,40 @@ afterEach(() => {
   mocks.user = { id: "20202020-2020-4020-8020-202020202020" };
 });
 describe("in-app guardian flow with synthetic authenticated services, no hosted users", () => {
+  it("requires explicit recipient opt-in for journey access without changing SOS consent", async () => {
+    mocks.read.mockResolvedValue({
+      contacts: [
+        {
+          id: "40404040-4040-4040-8040-404040404040",
+          recipient_id: mocks.user?.id,
+          traveller_id: "10101010-1010-4010-8010-101010101010",
+          name: "Synthetic guardian",
+          consent: "opted_in",
+          revoked_at: null,
+          journey_opt_in: false,
+        },
+      ],
+      sent: [],
+    });
+    mocks.journeyConsent.mockResolvedValue({ ok: true });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const view = render(
+      <QueryClientProvider client={client}>
+        <InAppGuardians />
+      </QueryClientProvider>,
+    );
+    const checkbox = await screen.findByRole("checkbox", { name: /I also consent/ });
+    expect((checkbox as HTMLInputElement).checked).toBe(false);
+    fireEvent.click(checkbox);
+    await waitFor(() =>
+      expect(mocks.journeyConsent).toHaveBeenCalledWith({
+        data: { id: "40404040-4040-4040-8040-404040404040", consent: true },
+      }),
+    );
+    expect(mocks.confirm).not.toHaveBeenCalled();
+    view.unmount();
+    client.clear();
+  });
   it("retrieves only when inbox opens, explicitly opens chosen note/location and acknowledges separately", async () => {
     mocks.read.mockResolvedValue({ contacts: [], sent: [] });
     mocks.retrieve.mockResolvedValue([alert]);
@@ -125,4 +168,3 @@ describe("in-app guardian flow with synthetic authenticated services, no hosted 
     client.clear();
   });
 });
-

@@ -181,6 +181,7 @@ export type Database = {
           expires_at: string
           id: string
           invited_email: string
+          journey_opt_in: boolean
           name: string
           recipient_id: string | null
           revoked_at: string | null
@@ -194,6 +195,7 @@ export type Database = {
           expires_at?: string
           id?: string
           invited_email: string
+          journey_opt_in?: boolean
           name: string
           recipient_id?: string | null
           revoked_at?: string | null
@@ -207,6 +209,7 @@ export type Database = {
           expires_at?: string
           id?: string
           invited_email?: string
+          journey_opt_in?: boolean
           name?: string
           recipient_id?: string | null
           revoked_at?: string | null
@@ -238,6 +241,104 @@ export type Database = {
           traveller_id?: string
         }
         Relationships: []
+      }
+      journey_events: {
+        Row: {
+          action: string
+          created_at: string
+          expected_at: string | null
+          id: string
+          journey_id: string
+          location: Json | null
+          note: string
+          traveller_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          expected_at?: string | null
+          id?: string
+          journey_id: string
+          location?: Json | null
+          note: string
+          traveller_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          expected_at?: string | null
+          id?: string
+          journey_id?: string
+          location?: Json | null
+          note?: string
+          traveller_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_events_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "private_journeys"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journey_requests: {
+        Row: {
+          created_at: string
+          payload: Json
+          request_key: string
+          result: Json
+          traveller_id: string
+        }
+        Insert: {
+          created_at?: string
+          payload: Json
+          request_key: string
+          result: Json
+          traveller_id: string
+        }
+        Update: {
+          created_at?: string
+          payload?: Json
+          request_key?: string
+          result?: Json
+          traveller_id?: string
+        }
+        Relationships: []
+      }
+      journey_shares: {
+        Row: {
+          enrollment_id: string
+          journey_id: string
+          revoked_at: string | null
+        }
+        Insert: {
+          enrollment_id: string
+          journey_id: string
+          revoked_at?: string | null
+        }
+        Update: {
+          enrollment_id?: string
+          journey_id?: string
+          revoked_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journey_shares_enrollment_id_fkey"
+            columns: ["enrollment_id"]
+            isOneToOne: false
+            referencedRelation: "inapp_guardians"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "journey_shares_journey_id_fkey"
+            columns: ["journey_id"]
+            isOneToOne: false
+            referencedRelation: "private_journeys"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notify_jobs: {
         Row: {
@@ -376,6 +477,48 @@ export type Database = {
         }
         Relationships: []
       }
+      private_journeys: {
+        Row: {
+          created_at: string
+          destination: string
+          expected_at: string
+          id: string
+          last_check_in_at: string | null
+          location: Json | null
+          note: string
+          sharing: boolean
+          status: string
+          traveller_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          destination: string
+          expected_at: string
+          id?: string
+          last_check_in_at?: string | null
+          location?: Json | null
+          note?: string
+          sharing?: boolean
+          status?: string
+          traveller_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          destination?: string
+          expected_at?: string
+          id?: string
+          last_check_in_at?: string | null
+          location?: Json | null
+          note?: string
+          sharing?: boolean
+          status?: string
+          traveller_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       production_service_state: {
         Row: {
           paused: boolean
@@ -452,6 +595,7 @@ export type Database = {
     Functions: {
       ack_notify: { Args: { p_id: string }; Returns: undefined }
       acquire_notify_worker: { Args: { p_token: string }; Returns: boolean }
+      can_read_journey: { Args: { p_id: string }; Returns: boolean }
       claim_notify: { Args: { p_id: string }; Returns: boolean }
       commit_sos_intent: {
         Args: {
@@ -485,6 +629,7 @@ export type Database = {
         Args: { p_id: string; p_patch: Json }
         Returns: undefined
       }
+      read_private_journeys: { Args: { p_guardian?: boolean }; Returns: Json }
       reconcile_notify: { Args: { p_sid: string }; Returns: undefined }
       release_notify_worker: { Args: { p_token: string }; Returns: undefined }
       reserve_voice: { Args: { p_user: string }; Returns: string }
@@ -501,6 +646,10 @@ export type Database = {
         }
         Returns: Json
       }
+      set_journey_consent: {
+        Args: { p_consent: boolean; p_id: string }
+        Returns: undefined
+      }
       store_notify_callback: {
         Args: {
           p_key: string
@@ -509,6 +658,14 @@ export type Database = {
           p_status: string
         }
         Returns: undefined
+      }
+      validate_journey_location: {
+        Args: { p_consent: boolean; p_location: Json }
+        Returns: Json
+      }
+      write_private_journey: {
+        Args: { p_payload: Json; p_request: string }
+        Returns: Json
       }
     }
     Enums: {
@@ -642,4 +799,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-

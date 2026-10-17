@@ -17,6 +17,7 @@
 - Circle posts/replies live in the demo store, mutate through `actions.ts`, and must remain pending until a moderator review. Standards approval is not fact verification. Personal disclosures do not require proof. The Circle is not confidential or live; see `docs/CIRCLE.md` before implementing a public backend.
 - Safety Kit state lives in its own localStorage key (`cocoon-kit-v1`), separate from the demo store, so demo reset never wipes a user's personal contacts.
 - Optional welcome/referral concept state is separate (`cocoon-referral-demo-v1`, `referral-demo.ts`). These are capped sample joins and non-spendable demo credits, never real user counts or rewards. `/welcome` must remain skippable and must not imply authentication.
+- Root entry completion uses the session-scoped `entry.ts` external-store hook shared by Home and AppShell; this keeps hydration consistent, hides entry navigation and leaves direct page URLs ungated.
 - Emergency access requests one-time geolocation only on explicit user action. Cancel/close must ignore late results; coordinates stay in memory until the panel closes. Native dialler/share handoffs are not delivery or dispatch confirmation. See `docs/ENTRY-AND-EMERGENCY.md`.
 
 - User prefs (user-confirmed country, units) live in `src/lib/cocoon/locale.ts` (`cocoon-prefs-v1`); country only selects the authority directory, never inferred — keeps emergency info scoped.
@@ -31,4 +32,4 @@
 - Production provider entry points enforce the shared immutable provider policy before outgoing traffic; environment credentials cannot override it, preventing accidental paid activation in this release.
 - Gemini Live remains an explicit unavailable provider policy entry with no token or audio transport; the official unpaid-service data restrictions are incompatible with unrestricted safety conversations, so keys and consent cannot enable it.
 - In-app guardian consent, SOS requests and private alerts use separate tables and authenticated RPCs in `inapp.functions.ts`; never route them through WhatsApp outbox or paid provider policy. Recipient retrieval/opening creates receipts, acknowledgement is separate, and polling exists only in the visible open account inbox.
-
+- Private journeys use authenticated `journey.functions.ts`/RPCs, not demo roles/storage. Separate guardian consent defaults off; withdrawal permanently retires old shares. Only active shared journeys are readable; inbox reopening requires fresh retrieval. Owner actions serialize and preserve private history.

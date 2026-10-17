@@ -33,6 +33,7 @@ import {
   DEFAULT_ROUTE_PREFERENCES,
 } from "@/lib/cocoon/route-analysis";
 import { RouteWeights } from "@/components/cocoon/RouteWeights";
+import { PrivateJourneyPanel } from "@/components/cocoon/PrivateJourneyPanel";
 
 export const Route = createFileRoute("/explore")({
   validateSearch: (s: Record<string, unknown>): { to: string; query?: string } => ({
@@ -49,6 +50,8 @@ export const Route = createFileRoute("/explore")({
       },
       { property: "og:title", content: "Route explorer · Cocoon" },
       { property: "og:description", content: "Compare routes and inspect safety report sources." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: () => (
@@ -65,7 +68,8 @@ function Explore() {
   const { to, query } = Route.useSearch();
   const nav = useNavigate();
   const s = useDemoState();
-  const preset = DESTINATIONS.find((d) => d.id === to) ?? DESTINATIONS[0]!;
+  const preset = DESTINATIONS.find((d) => d.id === to) ?? DESTINATIONS[0];
+  if (!preset) throw new Error("No destination is configured.");
   const [origin, setOrigin] = useState<Place>(ORIGIN);
   const [dest, setDest] = useState<Place>({ label: preset.label, at: preset.at });
   useEffect(
@@ -474,8 +478,14 @@ function Explore() {
             ))}
           </div>
 
+          <details className="border-t py-4">
+            <summary className="cursor-pointer font-display text-xl">
+              Review a real private journey to {dest.label.split(",")[0]}
+            </summary>
+            <PrivateJourneyPanel destination={dest.label.slice(0, 160)} />
+          </details>
           <div className="card-soft space-y-3 p-4">
-            <h2 className="text-lg font-semibold">Start with Guardian Mode</h2>
+            <h2 className="text-lg font-semibold">Start a local journey demo</h2>
             {trip ? (
               <p className="text-sm">
                 You already have an active journey.{" "}
@@ -513,12 +523,17 @@ function Explore() {
                   disabled={!sel}
                   onClick={() => {
                     if (!sel) return;
-                    startTrip(sel, dest.label.split(",")[0]!, guardian || null, locMode);
-                    toast.success("Journey started");
+                    startTrip(
+                      sel,
+                      dest.label.split(",")[0] ?? dest.label,
+                      guardian || null,
+                      locMode,
+                    );
+                    toast.success("Local demo journey started");
                     nav({ to: "/trip" });
                   }}
                 >
-                  Start journey · {sel?.label ?? "no route"}
+                  Start demo journey · {sel?.label ?? "no route"}
                 </Button>
               </>
             )}

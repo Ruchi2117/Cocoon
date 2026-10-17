@@ -18,6 +18,7 @@ import {
 import type { Rules, OutboxMessage, TripSnapshot } from "@/lib/notify/engine";
 import { WHATSAPP_DISABLED, VOICE_DISABLED } from "@/lib/production/provider-policy";
 import { InAppGuardians } from "@/components/cocoon/InAppGuardians";
+import { PrivateJourneyPanel } from "@/components/cocoon/PrivateJourneyPanel";
 export const Route = createFileRoute("/account")({
   head: () => ({
     meta: [
@@ -25,13 +26,13 @@ export const Route = createFileRoute("/account")({
       {
         name: "description",
         content:
-          "Private phone-free guardian consent, in-app SOS inbox and explicit acknowledgement. No background dispatch.",
+          "Private journeys, phone-free guardian consent, in-app SOS inbox and explicit acknowledgement. No background dispatch.",
       },
       { property: "og:title", content: "Private account · Cocoon" },
       {
         property: "og:description",
         content:
-          "Private in-app guardian SOS alerts while your inbox is open. Paid voice and WhatsApp remain disabled.",
+          "Private journey status and in-app guardian SOS while your inbox is open. Paid voice and WhatsApp remain disabled.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -111,9 +112,9 @@ function AccountPage() {
       <section className="space-y-4">
         <h1 className="font-poster text-4xl">YOUR PRIVATE COCOON.</h1>
         <p>
-          Sign in for phone-free guardian enrollment and in-app SOS alerts while your inbox is open.
-          WhatsApp and natural AI voice are disabled under the zero-payment policy. The local demo
-          remains available.
+          Sign in for private journeys, manual check-ins, phone-free guardian enrollment and in-app
+          SOS alerts while your inbox is open. WhatsApp and natural AI voice are disabled under the
+          zero-payment policy. The local demo remains available.
         </p>
         {!productionAuthConfigured() && (
           <p role="status">
@@ -163,6 +164,7 @@ function AccountPage() {
       <p>Signed in as {user.email}. Private production records are separate from the local demo.</p>
       {query.error && <p role="alert">Could not load private account data.</p>}
       <InAppGuardians />
+      <PrivateJourneyPanel />
       <form
         className="space-y-3 border-t pt-4"
         onSubmit={(e) => {

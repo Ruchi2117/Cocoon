@@ -50,7 +50,20 @@
       "when": 1792255555187,
       "tag": "0006_cocoon_inapp_guardian_sos",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792257699869,
+      "tag": "0007_cocoon_private_journeys",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792258029197,
+      "tag": "0008_cocoon_journey_consent_withdrawal",
+      "breakpoints": true
     }
   ]
 }
-

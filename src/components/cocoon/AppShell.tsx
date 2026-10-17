@@ -121,8 +121,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       </a>
       {navigating && <div className="route-loading" role="progressbar" aria-label="Loading page" />}
       <div className="bg-plum-gradient px-4 py-1.5 text-center text-[11px] tracking-wide">
-        Local demo · live map data when available · simulated journey progress & alerts · no
-        emergency dispatch
+        Public local demo + separate signed-in journeys & in-app guardian SOS · no background alerts
+        or emergency dispatch
       </div>
       <header data-app-header className="cocoon-field-header sticky top-0 z-[1000]">
         <div className="mx-auto flex max-w-6xl items-center gap-3 px-4 py-3">

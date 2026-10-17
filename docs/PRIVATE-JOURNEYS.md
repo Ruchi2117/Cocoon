@@ -1,0 +1,28 @@
+# Private journeys and manual check-ins
+
+## Available in this release
+
+A signed-in traveller can review a destination, local expected check-in time and one to five selected in-app guardians before starting a private journey. The traveller can manually check in, arrive, cancel or stop sharing, and retain owner-only history. Routes provides a separate, explicit private-journey review; it never silently starts a real journey alongside the local demo. Journey and Account expose the same private account data.
+
+Guardians first accept the existing phone-free, verified-email-bound invitation and separately opt into journey status in Account. Existing SOS consent never silently grants journey access. While their account inbox is open and visible they can retrieve active, currently permitted shared journeys, including the latest note, expected time and optional snapshot. Refresh is explicit; polling is every 30 seconds only in the visible open inbox. Hide, close, unmount and sign-out stop subsequent polling. An already accepted server request may finish.
+
+A missed deadline is computed from database server time and shown as **check-in overdue, not proof of danger**. It does not send an automatic alert. There is no continuous tracking, closed-tab/push delivery, SMS, WhatsApp, nearby broadcast or authority dispatch. Cocoon is not an emergency dispatch service. Browser speech remains a separately labelled scripted demo, not connected natural AI.
+
+## Consent and authorization
+
+- `journey.functions.ts` authenticates each call independently with verified bearer identity; `write_private_journey` and consent RPCs revalidate the verified account. Demo actor/role choices cannot authorize production data.
+- Migration `0007` creates private journeys, enrollment-scoped shares, immutable owner event history and owner/request-key deduplication with explicit grants and RLS. Private tables allow owner reads; recipient reads require the current active/shared journey, correct traveller/enrollment, opted-in recipient and separate journey consent. Recipients cannot read owner event/request logs or directly modify records.
+- Migration `0008` permanently marks existing shares revoked when journey consent, connection consent or the connection itself is withdrawn. Re-enabling consent does not resurrect an old journey share. A new traveller-reviewed journey is needed. Arrival, cancellation and stop-sharing immediately deny subsequent recipient retrieval; owner history remains. Information previously seen cannot be recalled.
+- Start validates and locks all selected enrollment rows in stable ID order in one transaction. Invalid, duplicate, unrelated, non-consenting or revoked recipients reject the whole operation. Owner advisory locks, row locks and a unique active-journey index serialize actions.
+- Identical owner/request-key retries return the original result without a new event; changed payload reuse fails. The UI retains the key after an uncertain failure and only resets it when the request changes or a successful action is confirmed.
+- Limits: one active journey per traveller, 1–5 guardians, 20 starts and 200 accepted actions in a rolling 24-hour window, future check-in within 24 hours, destination up to 160 characters and note up to 500. History retrieval returns the latest 50 journeys; older records are retained but not yet paginated in this UI.
+- Location is off by default, collected once only on explicit click and requires a separate inclusion checkbox. Server freshness: at most 120 seconds old, at most 10 seconds future tolerance, valid coordinates, nonnegative accuracy up to 100,000 m. Removing/cancelling/refreshing or changing accounts invalidates pending local location results. No permission request was made during development. A check-in without a new consented snapshot clears the latest shared snapshot; prior events remain owner-only.
+- Guardian snapshots unmount on close/hide/sign-out. Reopening suppresses cached details until a new authenticated retrieval completes; failed retrieval exposes retry rather than a stale snapshot.
+
+## Verification and remaining checks
+
+Tests use synthetic identities in isolated PGlite PostgreSQL. All fixture transactions roll back with no hosted personal records. Database tests exercise owner/intended recipient/unrelated isolation, wrong-role writes, independent consent, withdrawal/re-consent, revoked/stopped access, lifecycle, idempotency, invalid recipients, atomic failure, snapshot freshness, deadlines, limits and anonymous denial. UI tests mock authenticated services for explicit review → start → readback → check-in → arrival, stop/cancel, same-key retry, signed-out/loading/error states, guardian detail/refresh and hidden/closed/signed-out polling. No real accounts, messages, GPS, mic, camera or provider calls were used.
+
+Public browser checks cover 1280×1800 desktop and 390×844 mobile with normal and reduced motion: fresh-tab welcome, Skip, same-tab refresh, public Journey sign-in, enabled Account sign-in controls, direct Presence and Routes private review. No page errors or paid provider/OAuth requests occurred. Two pre-existing reduced-motion hydration mismatches were corrected without changing artwork.
+
+Hosted authenticated end-to-end readback/OAuth and truly concurrent multi-connection transactions remain unverified: real-account testing was prohibited and PGlite uses one connection. The schema is applied, but user-controlled sign-in verification is still required before claiming hosted journey completion. This release uses only the existing included Cloud allowance; finite allowance is not unlimited free service. Paid-provider policy remains immutable OFF. No external accounts, credentials, billing changes or publication.

@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef, useState } from "react";
+import { useHydrated } from "@tanstack/react-router";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   motion,
@@ -18,7 +19,9 @@ export function FlashlightThreshold({ opened }: { opened: boolean }) {
     ref = useRef<HTMLDivElement>(null),
     svg = useRef<SVGSVGElement>(null),
     pointer = useRef(false);
-  const reduced = useReducedMotion(),
+  const reducedPreference = useReducedMotion();
+  const hydrated = useHydrated();
+  const reduced = hydrated && reducedPreference,
     visible = useInView(ref),
     [still, setStill] = useState(false);
   const x = useMotionValue(430),

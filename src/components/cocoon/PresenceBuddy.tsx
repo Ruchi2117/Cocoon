@@ -1,4 +1,5 @@
 import { useId, useRef, useState } from "react";
+import { useHydrated } from "@tanstack/react-router";
 import { motion, useInView, useReducedMotion } from "motion/react";
 import type { CallPhase } from "./art";
 /** A small lantern moth: expressive state, rather than a claim of a human on the call. */
@@ -12,7 +13,9 @@ export function PresenceBuddy({
   const id = useId().replaceAll(":", "");
   const ref = useRef<HTMLDivElement>(null);
   const visible = useInView(ref);
-  const reduced = useReducedMotion();
+  const reducedPreference = useReducedMotion();
+  const hydrated = useHydrated();
+  const reduced = hydrated && reducedPreference;
   const [still, setStill] = useState(false);
   const active = visible && !reduced && !still;
   const talking = phase === "speaking",

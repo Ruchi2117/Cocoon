@@ -26,6 +26,7 @@ import { ArrivalScene } from "@/components/cocoon/ArrivalScene";
 import type { ShareKind } from "@/lib/cocoon/share";
 import { formatClock, formatDistance, usePrefs } from "@/lib/cocoon/locale";
 import type { LatLng } from "@/lib/cocoon/types";
+import { PrivateJourneyPanel } from "@/components/cocoon/PrivateJourneyPanel";
 
 export const Route = createFileRoute("/trip")({
   head: () => ({
@@ -33,16 +34,33 @@ export const Route = createFileRoute("/trip")({
       { title: "Your journey · Cocoon" },
       {
         name: "description",
-        content: "Guardian Mode: share destination, ETA and check-ins with a trusted contact.",
+        content:
+          "Private journeys and manual check-ins for opted-in in-app guardians, alongside a separate local demo. No background dispatch.",
       },
       { property: "og:title", content: "Your journey · Cocoon" },
-      { property: "og:description", content: "Guardian Mode trip sharing and check-ins." },
+      {
+        property: "og:description",
+        content:
+          "Private journeys, manual check-ins and owner history. Guardians must open their account inbox.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: () => (
-    <RoleGate role="traveller">
-      <TripPage />
-    </RoleGate>
+    <div className="space-y-6">
+      <PrivateJourneyPanel />
+      <details className="border-t pt-4">
+        <summary className="cursor-pointer font-display text-xl">
+          Local journey demo · simulated check-ins
+        </summary>
+        <div className="pt-5">
+          <RoleGate role="traveller">
+            <TripPage />
+          </RoleGate>
+        </div>
+      </details>
+    </div>
   ),
 });
 
@@ -273,7 +291,8 @@ function TripPage() {
             >
               <h2 className="text-lg font-semibold">Feeling uneasy?</h2>
               <p className="text-xs text-muted-foreground">
-                Sends {g?.name} a short structured update (not a transcript).
+                Simulates a short structured update to demo guardian {g?.name}, not a real person or
+                a transcript.
               </p>
               <input
                 value={concern}
@@ -284,7 +303,7 @@ function TripPage() {
                 aria-label="Concern note"
               />
               <Button type="submit" variant="outline" className="w-full rounded-full">
-                Send concern update
+                Simulate concern update
               </Button>
             </form>
           )}

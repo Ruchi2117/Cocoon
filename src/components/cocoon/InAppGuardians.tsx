@@ -13,6 +13,8 @@ import {
 } from "@/lib/production/inapp.functions";
 import { INAPP_LIMITATION, INAPP_POLL_MS, type InAppAlert } from "@/lib/production/inapp-schema";
 import { publicMapUrl } from "@/lib/cocoon/share";
+import { setJourneyConsent } from "@/lib/production/journey.functions";
+import { JourneyGuardianView } from "./JourneyGuardianView";
 
 export function InAppGuardians() {
   const { user } = useProductionAuth();
@@ -21,7 +23,8 @@ export function InAppGuardians() {
     confirm = useServerFn(confirmInAppGuardian),
     revoke = useServerFn(revokeInAppGuardian),
     retrieve = useServerFn(retrieveInAppInbox),
-    open = useServerFn(openInAppAlert);
+    open = useServerFn(openInAppAlert),
+    journeyConsent = useServerFn(setJourneyConsent);
   const [visible, setVisible] = useState(false),
     [inboxOpen, setInboxOpen] = useState(false);
   const [name, setName] = useState(""),
@@ -180,6 +183,23 @@ export function InAppGuardians() {
               {g.name} · {g.traveller_id === user.id ? "Your guardian" : "You are the guardian"} ·{" "}
               {g.consent.replaceAll("_", " ")}
             </span>
+            {g.recipient_id === user.id && g.consent === "opted_in" && !g.revoked_at && (
+              <label className="text-sm">
+                <input
+                  type="checkbox"
+                  checked={g.journey_opt_in ?? false}
+                  disabled={busy}
+                  onChange={(e) => {
+                    const consent = e.target.checked;
+                    void run(async () => {
+                      await journeyConsent({ data: { id: g.id, consent } });
+                    });
+                  }}
+                />{" "}
+                I also consent to this traveller’s selected journey status, check-ins and optional
+                snapshots while my inbox is open.
+              </label>
+            )}
             <Button
               size="sm"
               variant="outline"
@@ -311,6 +331,7 @@ export function InAppGuardians() {
           </>
         )}
       </div>
+      <JourneyGuardianView open={inboxOpen} />
       <div>
         <h3 className="font-display text-xl">Your sent in-app SOS alerts</h3>
         <Button variant="outline" onClick={() => void query.refetch()}>

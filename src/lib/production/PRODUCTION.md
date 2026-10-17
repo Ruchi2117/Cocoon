@@ -17,6 +17,7 @@ The user has no external provider accounts. Do not create accounts, accept terms
 `src/lib/production/provider-policy.ts` locks both paid channels off. Credentials and activation environment flags cannot override this release policy. Status, dispatch and voice creation enforce it. Existing provider code remains reviewable, not activated.
 
 ### Ready without external provider accounts
+- Private journeys/manual check-ins use authenticated `journey.functions.ts`, migrations `0007`/`0008` and separate Journey/Account/Routes review surfaces. Journey consent defaults off; withdrawal permanently retires old shares. See [capabilities and verification](../../../docs/PRIVATE-JOURNEYS.md). Current full suite: 228 tests across 37 files, including 13 journey PostgreSQL tests, 4 schema tests, 9 journey UI tests and explicit recipient-consent UI coverage. Changed-file lint and automatic build/type checks pass. Desktop/mobile normal/reduced-motion public hydration passes without provider/OAuth requests. Hosted signed-in readback remains unverified under the no-real-accounts restriction.
 - Private sign-in, profiles, token-bound guardian enrollment, preferences, SOS records and outbox wiring with ownership/consent protections.
 - In-app-only SOS is implemented separately through `inapp_guardians`, `inapp_sos` and `inapp_alerts` (migration `0006`). No phone or WhatsApp consent is collected for in-app enrollment. Invitations are user-shared, seven-day, hash-stored, one-use and bound to the recipient's verified email. See `inapp.functions.ts`, `InAppGuardians.tsx` and `ProductionSOS.tsx`.
 - Scripted browser-speech and text demo, separately labelled. Browser speech is not natural conversational AI. Browser/device availability varies; no paid AI call is made by this demo.
@@ -60,4 +61,3 @@ Development uses mock providers and isolated PostgreSQL tests. Never invoke real
 - https://developers.openai.com/api/reference/resources/realtime/subresources/calls/
 - https://www.twilio.com/docs/whatsapp/api
 - https://www.twilio.com/docs/whatsapp/tutorial/send-whatsapp-notification-messages-templates
-

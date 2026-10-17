@@ -1,5 +1,11 @@
 # Production voice and SOS
 
+- [x] Add verified private journeys, separate guardian consent, atomic lifecycle/check-ins and private RLS/idempotency/freshness limits. Migrations 0007/0008 applied; consent withdrawal permanently retires old shares. Demo and paid gates stay separate.
+- [x] Integrate Routes review, Journey owner history and visible open-inbox guardian view; correct companion/emergency claims. All 228 tests pass (37 files); changed-file lint and automatic build/type checks pass. Desktop/mobile normal/reduced-motion public hydration checks pass without provider/OAuth calls or permissions. See docs/PRIVATE-JOURNEYS.md.
+- [ ] Hosted signed-in journey readback/concurrency — blocked by prohibition on real-account testing and unavailable privileged hosted rollback/multi-connection test tools. Synthetic PostgreSQL and mocked signed-in flows verified instead.
+
+- [x] Import six-file entry sync; four focused tests and automatic build pass. Desktop/mobile standard-motion checks verify fresh-tab root without navigation, Enter/Skip, same-tab refresh, standalone welcome and direct Presence; zero page errors/provider requests. Public auth config and Cloudflare preset unchanged. Retained existing required welcome metadata (only source-sync exception); archive CRLF preserved, lint passes with endOfLine:auto. Existing out-of-scope FlashlightThreshold reduced-motion hydration warning observed; scene still renders, no redesign or unrelated edit.
+
 - [x] Fix public build configuration via Vite define from a public-only canonical Cloud connection manifest (no generated clients/private keys changed). Production config evaluation confirms both public constants even without sandbox VITE env. Auth absent/offline/hung fallback and voice close/error regressions pass; full suite 198 tests, automatic build/type checks OK. Signed-out hydration/hard refresh and offline checks pass with zero errors or OAuth/provider actions; read-only hosted auth settings HTTP200 confirms Google enabled. Published bundle verification awaits user republish; no accounts/media/SOS/billing changes or publishing.
 
 - [x] Add separate phone-free, token-bound in-app guardian consent and atomic private SOS alerts with recipient-only retrieval/open/ack receipts; migration 0006 applied without accounts or personal data.
@@ -24,4 +30,3 @@
 - [ ] Closed-tab dispatch and server voice termination — blocked by disabled providers and unavailable verified durable scheduling.
 - [ ] Provider delivery and audible verification — intentionally blocked; no real sends/calls/media tests authorized.
 - [x] Document exact prerequisites in src/lib/production/PRODUCTION.md; no publishing or paid provisioning.
-

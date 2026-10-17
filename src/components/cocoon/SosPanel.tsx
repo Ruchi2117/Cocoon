@@ -56,7 +56,7 @@ export function SosButton({ compact = false }: { compact?: boolean }) {
             setOpen(true);
           }}
         >
-          SOS
+          Explore local demo SOS
         </Button>
       ) : (
         <div className="space-y-3 rounded-2xl border border-coral/40 bg-coral/5 p-4">
@@ -299,4 +299,3 @@ export function Timeline({ events }: { events: { at: string; actor: string; text
     </details>
   );
 }
-

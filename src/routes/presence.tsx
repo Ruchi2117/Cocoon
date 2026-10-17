@@ -628,9 +628,9 @@ function Presence() {
                             >
                               {
                                 {
-                                  guardian_update: `Update ${guardian?.name ?? "guardian"}`,
+                                  guardian_update: `Demo update ${guardian?.name ?? "guardian"}`,
                                   sos: "SOS options",
-                                  check_in: "Log check-in",
+                                  check_in: "Log demo check-in",
                                   share_eta: "What's shared?",
                                 }[a]
                               }
@@ -644,8 +644,9 @@ function Presence() {
               ))}
               {pendingConfirm && (
                 <div className="rounded-2xl border bg-background p-3 text-sm">
-                  Send {guardian?.name} a structured “feeling uncomfortable” update with your ETA
-                  and location? Our conversation won't be shared.
+                  Simulate a structured “feeling uncomfortable” update to demo guardian{" "}
+                  {guardian?.name} with demo ETA and simulated location? No real person is notified.
+                  Our conversation won't be shared.
                   <div className="mt-2 flex gap-2">
                     <Button
                       size="sm"
@@ -659,7 +660,7 @@ function Presence() {
                         });
                       }}
                     >
-                      Yes, send
+                      Confirm demo update
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => setPendingConfirm(false)}>
                       Not now
@@ -884,4 +885,3 @@ function SettingsPanel({ voices }: { voices: SpeechSynthesisVoice[] }) {
     </div>
   );
 }
-

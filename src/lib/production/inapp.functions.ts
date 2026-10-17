@@ -11,7 +11,7 @@ export const inappAccountData = createServerFn({ method: "GET" })
       context.supabase
         .from("inapp_guardians")
         .select(
-          "id,traveller_id,recipient_id,name,expires_at,consent,consent_at,revoked_at,created_at",
+          "id,traveller_id,recipient_id,name,expires_at,consent,consent_at,revoked_at,created_at,journey_opt_in",
         )
         .order("created_at", { ascending: false }),
       context.supabase
