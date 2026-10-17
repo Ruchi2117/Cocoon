@@ -18,6 +18,7 @@ import {
 import type { Rules, OutboxMessage, TripSnapshot } from "@/lib/notify/engine";
 import { WHATSAPP_DISABLED, VOICE_DISABLED } from "@/lib/production/provider-policy";
 import { InAppGuardians } from "@/components/cocoon/InAppGuardians";
+import { EmergencyDraftEditor } from "@/components/cocoon/EmergencyDraftEditor";
 import { PrivateJourneyPanel } from "@/components/cocoon/PrivateJourneyPanel";
 export const Route = createFileRoute("/account")({
   head: () => ({
@@ -163,6 +164,7 @@ function AccountPage() {
       </div>
       <p>Signed in as {user.email}. Private production records are separate from the local demo.</p>
       {query.error && <p role="alert">Could not load private account data.</p>}
+      <EmergencyDraftEditor />
       <InAppGuardians />
       <PrivateJourneyPanel />
       <form

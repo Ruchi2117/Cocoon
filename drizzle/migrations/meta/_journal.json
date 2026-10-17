@@ -64,6 +64,13 @@
       "when": 1792258029197,
       "tag": "0008_cocoon_journey_consent_withdrawal",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792258889832,
+      "tag": "0009_cocoon_emergency_drafts_snapshots",
+      "breakpoints": true
     }
   ]
 }

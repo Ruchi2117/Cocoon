@@ -725,7 +725,7 @@ function Presence() {
             <p className="text-sm text-muted-foreground">
               Tip:{" "}
               <Link className="underline" to="/explore" search={{ to: "d-metro" }}>
-                start a journey
+                start a local demo journey
               </Link>{" "}
               so {c.name} can use your destination and ETA.
             </p>
@@ -733,8 +733,9 @@ function Presence() {
           <div className="card-soft p-4 text-xs text-muted-foreground">
             <p className="font-medium text-foreground">Privacy</p>
             The mic listens only while a call is on and unmuted, and stops the moment you end the
-            call or leave this page. Guardians receive structured updates, never transcripts.
-            Nothing escalates without your confirmation.
+            call or leave this page. Companion guardian updates are local simulations. Real in-app
+            SOS shares only your separately reviewed content with selected consenting guardians. No
+            transcript or media is included; nothing escalates automatically.
           </div>
         </aside>
       </BalancedColumns>

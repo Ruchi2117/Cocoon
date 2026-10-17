@@ -39,6 +39,15 @@ const alert = {
   delivered_at: "2026-10-17T16:01:00Z",
   read_at: null,
   acknowledged_at: null,
+  traveller_id: "10101010-1010-4010-8010-101010101010",
+  recipient_id: "20202020-2020-4020-8020-202020202020",
+  enrollment_id: "40404040-4040-4040-8040-404040404040",
+  sos_id: "50505050-5050-4050-8050-505050505050",
+  introduction: "Reviewed introduction",
+  help_instructions: "Reviewed help instructions",
+  draft_included: true,
+  prepared_at: "2026-10-17T15:59:00Z",
+  recipient_name: "Original recipient name",
 };
 beforeEach(() => {
   mocks.journeys.mockResolvedValue({ serverNow: "2026-10-17T20:00:00Z", journeys: [] });
@@ -50,6 +59,34 @@ afterEach(() => {
   mocks.user = { id: "20202020-2020-4020-8020-202020202020" };
 });
 describe("in-app guardian flow with synthetic authenticated services, no hosted users", () => {
+  it("owner history displays immutable recipient and content, not mutable connection names", async () => {
+    mocks.user = { id: alert.traveller_id };
+    mocks.read.mockResolvedValue({
+      contacts: [
+        {
+          id: alert.enrollment_id,
+          name: "Changed connection name",
+          traveller_id: alert.traveller_id,
+          consent: "opted_out",
+          revoked_at: "2026-10-17T17:00:00Z",
+        },
+      ],
+      sent: [alert],
+    });
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const view = render(
+      <QueryClientProvider client={client}>
+        <InAppGuardians />
+      </QueryClientProvider>,
+    );
+    await screen.findByText(/Recipient: Original recipient name/);
+    expect(screen.getByText("Introduction: Reviewed introduction")).toBeVisible();
+    expect(screen.getByText("Help / instructions: Reviewed help instructions")).toBeVisible();
+    expect(screen.getByText("Synthetic chosen SOS note")).toBeVisible();
+    expect(mocks.retrieve).not.toHaveBeenCalled();
+    view.unmount();
+    client.clear();
+  });
   it("requires explicit recipient opt-in for journey access without changing SOS consent", async () => {
     mocks.read.mockResolvedValue({
       contacts: [
@@ -107,6 +144,8 @@ describe("in-app guardian flow with synthetic authenticated services, no hosted 
     expect(mocks.open).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Open SOS alert" }));
     await screen.findByText("Synthetic chosen SOS note");
+    expect(screen.getByText("Introduction: Reviewed introduction")).toBeVisible();
+    expect(screen.getByText("Help / instructions: Reviewed help instructions")).toBeVisible();
     expect(mocks.open).toHaveBeenCalledWith({ data: { id: alert.id, acknowledge: false } });
     expect(
       screen.getByRole("link", { name: /Open shared snapshot/ }).getAttribute("href"),

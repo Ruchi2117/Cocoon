@@ -12,7 +12,7 @@ import {
   revokeInAppGuardian,
 } from "@/lib/production/inapp.functions";
 import { INAPP_LIMITATION, INAPP_POLL_MS, type InAppAlert } from "@/lib/production/inapp-schema";
-import { publicMapUrl } from "@/lib/cocoon/share";
+import { SOSSnapshot } from "./SOSSnapshot";
 import { setJourneyConsent } from "@/lib/production/journey.functions";
 import { JourneyGuardianView } from "./JourneyGuardianView";
 
@@ -169,8 +169,8 @@ export function InAppGuardians() {
         </label>
         <label className="block">
           <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} />{" "}
-          I opt into this traveller’s in-app SOS alerts, including any note and location snapshot
-          they choose. No phone number or WhatsApp consent.
+          I opt into this traveller’s in-app SOS alerts, including any optional introduction, help
+          instructions, note and location snapshot they choose. No phone number or WhatsApp consent.
         </label>
         <Button disabled={busy || !consent}>Confirm in-app consent</Button>
       </form>
@@ -249,8 +249,12 @@ export function InAppGuardians() {
                 Inbox unavailable; no delivery is confirmed here. Refresh to retry.
               </p>
             )}
-            {!inbox.error && inbox.data?.length === 0 && <p>No in-app alerts.</p>}
-            {!inbox.error &&
+            {visible && !inbox.isFetching && !inbox.error && inbox.data?.length === 0 && (
+              <p>No in-app alerts.</p>
+            )}
+            {visible &&
+              !inbox.isFetching &&
+              !inbox.error &&
               inbox.data?.map((a) => (
                 <article className="space-y-2 border-b py-3" key={a.id}>
                   <p>
@@ -283,29 +287,7 @@ export function InAppGuardians() {
             {opened && visible && (
               <div className="space-y-2 border-l-2 pl-4" aria-label="Opened guardian SOS">
                 <h4 className="font-display text-xl">SOS from {opened.traveller_name}</h4>
-                <p className="whitespace-pre-wrap break-words">
-                  {opened.note || "No note shared."}
-                </p>
-                {opened.location ? (
-                  <>
-                    <p>
-                      {opened.location.latitude.toFixed(5)}, {opened.location.longitude.toFixed(5)}{" "}
-                      · ±{Math.round(opened.location.accuracy)} m ·{" "}
-                      {new Date(opened.location.timestamp).toLocaleString()} · one-time snapshot,
-                      not live tracking
-                    </p>
-                    <a
-                      className="underline"
-                      href={publicMapUrl([opened.location.latitude, opened.location.longitude])}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      Open shared snapshot on map ↗
-                    </a>
-                  </>
-                ) : (
-                  <p>No location shared.</p>
-                )}
+                <SOSSnapshot alert={opened} />
                 <p>
                   Acknowledgement means you chose to acknowledge, not that help is dispatched or
                   arriving.
@@ -338,15 +320,29 @@ export function InAppGuardians() {
           Refresh in-app status
         </Button>
         {query.data?.sent.map((a) => (
-          <p className="my-2" key={a.id}>
-            {query.data.contacts.find((g) => g.id === a.enrollment_id)?.name ?? "Guardian"} ·{" "}
-            {a.read_at
-              ? "Read · opened"
-              : a.delivered_at
-                ? "Delivered · inbox retrieved"
-                : "Stored · not retrieved"}{" "}
-            · {a.acknowledged_at ? "Acknowledged" : "Not acknowledged"}
-          </p>
+          <article className="my-2 space-y-2 border-b py-3" key={a.id}>
+            <p>
+              Recipient:{" "}
+              {a.recipient_name === "Guardian"
+                ? (query.data.contacts.find((g) => g.id === a.enrollment_id)?.name ??
+                  "Guardian (earlier alert)")
+                : a.recipient_name}{" "}
+              · account {a.recipient_id} · enrollment {a.enrollment_id}
+            </p>
+            <SOSSnapshot alert={a} />
+            <p>
+              {a.read_at
+                ? "Read · explicitly opened"
+                : a.delivered_at
+                  ? "Retrieved · signed-in inbox"
+                  : "Stored · not retrieved"}{" "}
+              · {a.acknowledged_at ? "Acknowledged" : "Not acknowledged"}
+            </p>
+            <p className="text-xs">
+              Retrieved: {a.delivered_at ?? "Not recorded"} · read: {a.read_at ?? "Not recorded"} ·
+              acknowledged: {a.acknowledged_at ?? "Not recorded"}. None means help dispatched.
+            </p>
+          </article>
         ))}
       </div>
       {error && <p role="alert">{error}</p>}

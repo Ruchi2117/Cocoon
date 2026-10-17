@@ -2,7 +2,61 @@ import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { z } from "zod";
 import { tokenHash, validateLocation } from "./security";
-import { inappAlertSchema, inappSOSInput } from "./inapp-schema";
+import { emergencyDraftInput, inappAlertSchema, inappSOSInput } from "./inapp-schema";
+
+export const readEmergencyDraft = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const [draft, profile] = await Promise.all([
+      context.supabase
+        .from("emergency_drafts")
+        .select("*")
+        .eq("traveller_id", context.userId)
+        .maybeSingle(),
+      context.supabase
+        .from("profiles")
+        .select("display_name")
+        .eq("id", context.userId)
+        .maybeSingle(),
+    ]);
+    if (draft.error || profile.error)
+      throw new Error("Emergency preferences unavailable. Refresh to retry.");
+    return {
+      draft: draft.data
+        ? {
+            introduction: draft.data.introduction,
+            helpInstructions: draft.data.help_instructions,
+            preferredRecipientIds: draft.data.preferred_recipient_ids,
+          }
+        : null,
+      senderName: profile.data?.display_name ?? "Traveller",
+    };
+  });
+export const saveEmergencyDraft = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(emergencyDraftInput)
+  .handler(async ({ data, context }) => {
+    const { error } = await context.supabase.rpc("write_emergency_draft", {
+      p_delete: false,
+      p_introduction: data.introduction,
+      p_help: data.helpInstructions,
+      p_recipients: data.preferredRecipientIds,
+    });
+    if (error) throw new Error("Draft not saved. Refresh current guardian consent and retry.");
+    return { ok: true };
+  });
+export const deleteEmergencyDraft = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const { error } = await context.supabase.rpc("write_emergency_draft", {
+      p_delete: true,
+      p_introduction: "",
+      p_help: "",
+      p_recipients: [],
+    });
+    if (error) throw new Error("Draft not deleted. Retry.");
+    return { ok: true };
+  });
 
 export const inappAccountData = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
@@ -81,12 +135,14 @@ export const submitInAppSOS = createServerFn({ method: "POST" })
   .inputValidator(inappSOSInput)
   .handler(async ({ data, context }) => {
     const location = validateLocation(data.location, data.locationConsent);
-    const { data: result, error } = await context.supabase.rpc("send_inapp_sos", {
+    if (!data.content) throw new Error("Review the current SOS snapshot before confirming.");
+    const { data: result, error } = await context.supabase.rpc("send_inapp_sos_snapshot", {
       p_request: data.requestKey,
       p_recipients: data.recipientIds,
       p_note: data.note,
       p_location: location,
       p_location_consent: data.locationConsent,
+      p_content: data.content,
     });
     if (error)
       throw new Error(

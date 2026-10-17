@@ -1,6 +1,31 @@
 import { z } from "zod";
 import { locationInput } from "./security";
 
+export const emergencyDraftInput = z
+  .object({
+    introduction: z.string().max(300),
+    helpInstructions: z.string().max(500),
+    preferredRecipientIds: z.array(z.string().uuid()).max(5),
+  })
+  .strict()
+  .refine(
+    (v) => new Set(v.preferredRecipientIds).size === v.preferredRecipientIds.length,
+    "Duplicate recipients",
+  );
+export const sosContent = z
+  .object({
+    introduction: z.string().max(300),
+    helpInstructions: z.string().max(500),
+    includeDraft: z.boolean(),
+    senderName: z.string().min(1).max(60),
+    preparedAt: z.string().datetime(),
+  })
+  .strict()
+  .refine(
+    (v) => v.includeDraft || (!v.introduction && !v.helpInstructions),
+    "Omitted draft must be empty",
+  );
+
 export const inappSOSInput = z
   .object({
     requestKey: z.string().uuid(),
@@ -9,8 +34,13 @@ export const inappSOSInput = z
     note: z.string().max(500),
     location: locationInput.nullable(),
     locationConsent: z.boolean(),
+    content: sosContent,
   })
-  .strict();
+  .strict()
+  .refine(
+    (v) => new Set(v.recipientIds).size === v.recipientIds.length,
+    "Duplicate SOS recipients",
+  );
 
 export const inappAlertSchema = z.object({
   id: z.string().uuid(),
@@ -19,6 +49,11 @@ export const inappAlertSchema = z.object({
   enrollment_id: z.string().uuid(),
   recipient_id: z.string().uuid(),
   traveller_name: z.string(),
+  introduction: z.string().default(""),
+  help_instructions: z.string().default(""),
+  draft_included: z.boolean().default(false),
+  prepared_at: z.string().nullable().default(null),
+  recipient_name: z.string().default("Guardian"),
   note: z.string(),
   location: locationInput.nullable(),
   created_at: z.string(),

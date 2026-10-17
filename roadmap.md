@@ -1,5 +1,9 @@
 # Production voice and SOS
 
+- [x] Add owner-private emergency drafts/preferences, immutable explicitly reviewed SOS snapshots and per-recipient exact history. Migration 0009 applied; hosted read-only policies confirmed. Paid locks/public auth configuration unchanged.
+- [x] Verify SOS identical/changed retry, cancellation/account switching, consent/ownership/atomicity and guardian rendering. 255 tests across 39 files pass, including 11 new rollback PostgreSQL cases; changed application lint and automatic build/type checks pass. Desktop/mobile public entry/Account/SOS/Journey hydration has zero page errors/provider/OAuth traffic. See docs/SOS-REVIEW.md.
+- [ ] Hosted signed-in SOS readback — blocked by explicit no-real-accounts/no-real-SOS-testing constraint. Synthetic PostgreSQL and mocked signed-in send/retrieve/open/ack flows verified instead; no publication.
+
 - [x] Add verified private journeys, separate guardian consent, atomic lifecycle/check-ins and private RLS/idempotency/freshness limits. Migrations 0007/0008 applied; consent withdrawal permanently retires old shares. Demo and paid gates stay separate.
 - [x] Integrate Routes review, Journey owner history and visible open-inbox guardian view; correct companion/emergency claims. All 228 tests pass (37 files); changed-file lint and automatic build/type checks pass. Desktop/mobile normal/reduced-motion public hydration checks pass without provider/OAuth calls or permissions. See docs/PRIVATE-JOURNEYS.md.
 - [ ] Hosted signed-in journey readback/concurrency — blocked by prohibition on real-account testing and unavailable privileged hosted rollback/multi-connection test tools. Synthetic PostgreSQL and mocked signed-in flows verified instead.

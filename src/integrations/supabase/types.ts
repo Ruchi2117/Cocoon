@@ -38,6 +38,30 @@ export type Database = {
         }
         Relationships: []
       }
+      emergency_drafts: {
+        Row: {
+          help_instructions: string
+          introduction: string
+          preferred_recipient_ids: string[]
+          traveller_id: string
+          updated_at: string
+        }
+        Insert: {
+          help_instructions?: string
+          introduction?: string
+          preferred_recipient_ids?: string[]
+          traveller_id: string
+          updated_at?: string
+        }
+        Update: {
+          help_instructions?: string
+          introduction?: string
+          preferred_recipient_ids?: string[]
+          traveller_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       emergency_sessions: {
         Row: {
           created_at: string
@@ -118,12 +142,17 @@ export type Database = {
           acknowledged_at: string | null
           created_at: string
           delivered_at: string | null
+          draft_included: boolean
           enrollment_id: string
+          help_instructions: string
           id: string
+          introduction: string
           location: Json | null
           note: string
+          prepared_at: string | null
           read_at: string | null
           recipient_id: string
+          recipient_name: string
           sos_id: string
           traveller_id: string
           traveller_name: string
@@ -132,12 +161,17 @@ export type Database = {
           acknowledged_at?: string | null
           created_at?: string
           delivered_at?: string | null
+          draft_included?: boolean
           enrollment_id: string
+          help_instructions?: string
           id?: string
+          introduction?: string
           location?: Json | null
           note?: string
+          prepared_at?: string | null
           read_at?: string | null
           recipient_id: string
+          recipient_name?: string
           sos_id: string
           traveller_id: string
           traveller_name: string
@@ -146,12 +180,17 @@ export type Database = {
           acknowledged_at?: string | null
           created_at?: string
           delivered_at?: string | null
+          draft_included?: boolean
           enrollment_id?: string
+          help_instructions?: string
           id?: string
+          introduction?: string
           location?: Json | null
           note?: string
+          prepared_at?: string | null
           read_at?: string | null
           recipient_id?: string
+          recipient_name?: string
           sos_id?: string
           traveller_id?: string
           traveller_name?: string
@@ -646,6 +685,17 @@ export type Database = {
         }
         Returns: Json
       }
+      send_inapp_sos_snapshot: {
+        Args: {
+          p_content: Json
+          p_location: Json
+          p_location_consent: boolean
+          p_note: string
+          p_recipients: string[]
+          p_request: string
+        }
+        Returns: Json
+      }
       set_journey_consent: {
         Args: { p_consent: boolean; p_id: string }
         Returns: undefined
@@ -662,6 +712,15 @@ export type Database = {
       validate_journey_location: {
         Args: { p_consent: boolean; p_location: Json }
         Returns: Json
+      }
+      write_emergency_draft: {
+        Args: {
+          p_delete: boolean
+          p_help: string
+          p_introduction: string
+          p_recipients: string[]
+        }
+        Returns: undefined
       }
       write_private_journey: {
         Args: { p_payload: Json; p_request: string }
