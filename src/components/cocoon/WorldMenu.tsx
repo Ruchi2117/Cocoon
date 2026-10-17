@@ -13,7 +13,8 @@ import { setRole } from "@/lib/cocoon/actions";
 import { resetDemo } from "@/lib/cocoon/store";
 import type { Role } from "@/lib/cocoon/types";
 import { AtlasPanorama } from "./AtlasPanorama";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
+import { useReducedMotion } from "@/hooks/use-stable-reduced-motion";
 import { enterWorld } from "@/lib/cocoon/world-navigation";
 import { ThreadText } from "./WaveText";
 const NIGHT_CHAPTERS = [

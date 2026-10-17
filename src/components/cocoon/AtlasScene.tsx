@@ -1,5 +1,6 @@
 import { useId } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
+import { useReducedMotion } from "@/hooks/use-stable-reduced-motion";
 /** Code-native scenery: each destination changes the architecture of the shared atlas. */
 export function AtlasScene({ place }: { place: string }) {
   const id = useId().replaceAll(":", "");

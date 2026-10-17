@@ -1,17 +1,8 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useHydrated } from "@tanstack/react-router";
 import { useIsMobile } from "@/hooks/use-mobile";
-import {
-  motion,
-  useAnimationFrame,
-  useInView,
-  useMotionValue,
-  useMotionValueEvent,
-  useReducedMotion,
-  useScroll,
-  useSpring,
-  useTransform,
-} from "motion/react";
+import { motion, useAnimationFrame, useInView, useMotionValue, useMotionValueEvent, useScroll, useSpring, useTransform } from "motion/react";
+import { useReducedMotion } from "@/hooks/use-stable-reduced-motion";
 import { Pause, Play } from "lucide-react";
 
 export function FlashlightThreshold({ opened }: { opened: boolean }) {

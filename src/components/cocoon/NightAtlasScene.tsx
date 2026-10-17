@@ -1,5 +1,6 @@
 import { useId } from "react";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
+import { useReducedMotion } from "@/hooks/use-stable-reduced-motion";
 
 /** Layered, articulated SVG scenes. Decorative people never imply live users. */
 export function NightAtlasScene({ scene, still = false }: { scene: number; still?: boolean }) {

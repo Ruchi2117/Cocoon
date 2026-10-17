@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ScrollWords } from "./ScrollWords";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion } from "motion/react";
+import { useReducedMotion } from "@/hooks/use-stable-reduced-motion";
 import { ArrowLeft, ArrowRight, Newspaper, BookOpen } from "lucide-react";
 import type { SafetyHeadline } from "@/lib/cocoon/safety-news";
 export function NewsFlipbook({ items }: { items: SafetyHeadline[] }) {

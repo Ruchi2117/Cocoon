@@ -1,4 +1,5 @@
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
+import { useReducedMotion } from "@/hooks/use-stable-reduced-motion";
 
 const moods: Record<string, { title: string; detail: string; color: string }> = {
   Home: {

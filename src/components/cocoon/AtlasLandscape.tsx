@@ -1,4 +1,5 @@
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
+import { useReducedMotion } from "@/hooks/use-stable-reduced-motion";
 
 /** Persistent edge scenery: the same paths travel and reshape between places. */
 export function AtlasLandscape({ scene, still }: { scene: number; still: boolean }) {

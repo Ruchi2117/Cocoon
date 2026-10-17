@@ -158,8 +158,8 @@ export function SafetyNews() {
           {result?.fetchedAt && (
             <p className="py-3 text-xs text-muted-foreground">
               {result.stale ? "Cached" : "Retrieved"} {new Date(result.fetchedAt).toLocaleString()}{" "}
-              · Google News RSS · selected publishers · checks every 10 minutes while visible;
-              server cache up to 5 minutes.
+              · {result.sources?.length ? result.sources.join(", ") : "selected publishers"} RSS ·
+              checks every 10 minutes while visible; server cache up to 5 minutes.
             </p>
           )}
           {result && !result.items.length && !error && !loading && (

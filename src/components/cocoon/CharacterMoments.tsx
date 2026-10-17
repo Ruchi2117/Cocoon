@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { AnimatePresence, motion, useInView, useReducedMotion } from "motion/react";
+import { AnimatePresence, motion, useInView } from "motion/react";
+import { useReducedMotion } from "@/hooks/use-stable-reduced-motion";
 import { ArrowUpRight, Pause, Play } from "lucide-react";
 import { GirlFigure, type GirlPose } from "./GirlFigure";
 

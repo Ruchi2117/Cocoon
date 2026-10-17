@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
+import { useReducedMotion } from "@/hooks/use-stable-reduced-motion";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import { WORLD_ENTRANCE, type WorldEntrance } from "@/lib/cocoon/world-navigation";

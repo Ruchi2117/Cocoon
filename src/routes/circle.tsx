@@ -1,4 +1,5 @@
-import { useInView, useReducedMotion } from "motion/react";
+import { useInView } from "motion/react";
+import { useReducedMotion } from "@/hooks/use-stable-reduced-motion";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState, useRef } from "react";
 import {

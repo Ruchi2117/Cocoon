@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
-import { motion, useInView, useReducedMotion, useScroll, useTransform } from "motion/react";
+import { motion, useInView, useScroll, useTransform } from "motion/react";
+import { useReducedMotion } from "@/hooks/use-stable-reduced-motion";
 import { Pause, Play } from "lucide-react";
 
 export function ReportType() {

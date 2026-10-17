@@ -1,6 +1,7 @@
 import { Link, useHydrated } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
-import { useInView, useReducedMotion } from "motion/react";
+import { useInView } from "motion/react";
+import { useReducedMotion } from "@/hooks/use-stable-reduced-motion";
 import {
   Mic,
   MicOff,

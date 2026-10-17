@@ -1,17 +1,8 @@
 import { WaveText } from "./WaveText";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Link } from "@tanstack/react-router";
-import {
-  AnimatePresence,
-  motion,
-  useInView,
-  useMotionValue,
-  useMotionValueEvent,
-  useReducedMotion,
-  useScroll,
-  useSpring,
-  useTransform,
-} from "motion/react";
+import { AnimatePresence, motion, useInView, useMotionValue, useMotionValueEvent, useScroll, useSpring, useTransform } from "motion/react";
+import { useReducedMotion } from "@/hooks/use-stable-reduced-motion";
 import { ArrowDown, ArrowUpRight } from "lucide-react";
 import { GirlFigure } from "./GirlFigure";
 import { WorldDestinations } from "./WorldDestinations";

@@ -30,3 +30,5 @@
 - Presence primary call uses the Lovable AI Gateway Live relay (`src/lib/live/`, `/api/live` in `src/server.ts` + `live-vite-plugin.ts` for dev) with injected auth/quota deps; it needs no external provider account, and direct OpenAI voice stays policy-disabled. The scripted browser demo (`docs/PRESENCE-ROOM.md`) stays collapsed and labelled, never a fallback. See `docs/LIVE-VOICE.md`.
 - Subdirectories may have their own `AGENTS.md` (e.g. `src/lib/production/`); read it before changing files there.
 - Signed-out Presence calls use the same Live relay with an empty token: server-only `reserve_guest_voice` uses hashed trusted-IP and global caps; missing IP or unavailable pause controls fail closed, so shared credits stay bounded without fingerprinting.
+- Components import `useReducedMotion` from `@/hooks/use-stable-reduced-motion` (false until hydrated), never directly from motion/react, so SSR and first client render match.
+- Safety news merges several fixed publisher RSS feeds (`FEEDS` in `safety-news.ts`, max 6 per region for the outbound cap); partial success is success, never request-supplied URLs.

@@ -62,17 +62,20 @@ describe("safety news boundary", () => {
     const fetchMock = vi.fn().mockResolvedValue(new Response(rss(item())));
     vi.stubGlobal("fetch", fetchMock);
     const { fetchSafetyNews } = await import("./safety-news");
-    const first = await fetchSafetyNews("india");
+    const googleOnly = (await import("./safety-news")).FEEDS.india.filter(
+      (f) => f.publisher === "google",
+    );
+    const first = await fetchSafetyNews("india", googleOnly);
     expect(first.items).toHaveLength(1);
     expect(first.unavailable).toBe(false);
-    await fetchSafetyNews("india");
+    await fetchSafetyNews("india", googleOnly);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     vi.setSystemTime(now + 6 * 60000);
     fetchMock.mockRejectedValue(new Error("offline"));
-    const stale = await fetchSafetyNews("india");
+    const stale = await fetchSafetyNews("india", googleOnly);
     expect(stale).toEqual({ ...first, stale: true, unavailable: true });
     expect((await fetchSafetyNews("global")).items).toEqual([]);
     vi.setSystemTime(now + 25 * 3600000);
-    expect((await fetchSafetyNews("india")).items).toEqual([]);
+    expect((await fetchSafetyNews("india", googleOnly)).items).toEqual([]);
   });
 });

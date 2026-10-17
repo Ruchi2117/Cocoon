@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { motion, useReducedMotion } from "motion/react";
+import { motion } from "motion/react";
+import { useReducedMotion } from "@/hooks/use-stable-reduced-motion";
 import { ArrowUpRight } from "lucide-react";
 
 /** A one-time arrival illustration; no location or safety inference. */
