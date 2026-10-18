@@ -173,16 +173,23 @@ export function AtlasPanorama({
           <path d="m320 325 140-115 110 110-103-45-57 29Z" fill="#9aa3af" opacity=".18" />
           <path d="M0 590q220-230 440-100t440-30 720 80v220H0Z" fill="#334a60" />
         </motion.g>
-        <AnimatePresence initial={false}>
+        <AnimatePresence initial={false} mode="wait">
           <motion.g
             key={place}
+            data-atlas-landscape={place}
             initial={quiet ? false : { x: shift + direction * 60, y: 140, opacity: 0 }}
             animate={{ x: shift, y: 0, opacity: 1 }}
-            exit={{ x: shift - direction * 60, y: 90, opacity: 0 }}
+            exit={quiet ? { opacity: 0 } : { x: shift - direction * 60, y: 90, opacity: 0 }}
             transition={
               quiet
                 ? { duration: 0 }
-                : { type: "spring", stiffness: 70, damping: 18, mass: 1, opacity: { duration: 0.6 } }
+                : {
+                    type: "spring",
+                    stiffness: 70,
+                    damping: 18,
+                    mass: 1,
+                    opacity: { duration: 0.6 },
+                  }
             }
           >
             {["Home", "Journey", "Call", "Kit", "Reports"].includes(place) ? (
@@ -348,7 +355,12 @@ export function AtlasPanorama({
               key={`${place}-${i}`}
               initial={quiet ? false : { y: 320 }}
               animate={{ y: 0 }}
-              transition={{ type: "spring", stiffness: 90, damping: 16, delay: 0.12 + (i % 3) * 0.09 }}
+              transition={{
+                type: "spring",
+                stiffness: 90,
+                damping: 16,
+                delay: 0.12 + (i % 3) * 0.09,
+              }}
             >
               <Pine x={x!} y={y!} size={size!} color={i % 2 ? "#244b50" : "#193946"} />
             </motion.g>
@@ -406,7 +418,12 @@ export function AtlasPanorama({
               r={i % 3 === 0 ? 3.5 : 2}
               fill={palette[2]}
               animate={{ y: [0, -760], opacity: [0, 0.9, 0], x: [0, i % 2 ? 30 : -30, 0] }}
-              transition={{ duration: 9 + (i % 5) * 1.6, repeat: Infinity, delay: i * 0.7, ease: "easeOut" }}
+              transition={{
+                duration: 9 + (i % 5) * 1.6,
+                repeat: Infinity,
+                delay: i * 0.7,
+                ease: "easeOut",
+              }}
             />
           ))}
         <rect width="1300" height="1000" fill={`url(#${id}shade)`} />

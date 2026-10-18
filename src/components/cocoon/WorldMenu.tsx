@@ -17,6 +17,7 @@ import { motion } from "motion/react";
 import { useReducedMotion } from "@/hooks/use-stable-reduced-motion";
 import { enterWorld } from "@/lib/cocoon/world-navigation";
 import { ThreadText } from "./WaveText";
+import { useAtlasPreview } from "@/hooks/use-atlas-preview";
 const NIGHT_CHAPTERS = [
   {
     name: "The city is awake",
@@ -88,10 +89,11 @@ export function WorldMenu({
   const lastWheel = useRef(0);
   const sceneFor = (label: string) =>
     label === "Learn" || label === "Kit" ? 1 : label === "Circle" ? 2 : 0;
-  const previewPlace = (label: string) => {
+  const previews = useAtlasPreview(open, (label) => {
     setPreview(label);
     setScene(sceneFor(label));
-  };
+  });
+  const previewPlace = previews.select;
   const changeScene = (delta: number) => {
     setDirection(delta);
     const index = PLACE_ORDER.indexOf(preview ?? current?.label ?? "Home");
@@ -100,9 +102,10 @@ export function WorldMenu({
     const label = available[(active + delta + available.length) % available.length];
     if (label) previewPlace(label);
   };
-  const selected = items.find((item) => item.label === preview) ?? current ?? items[0]!;
-  const chapter = NIGHT_CHAPTERS[Math.max(0, PLACE_ORDER.indexOf(selected.label))]!;
+  const selected = items.find((item) => item.label === preview) ?? current ?? items[0];
+  const chapter = NIGHT_CHAPTERS[Math.max(0, PLACE_ORDER.indexOf(selected?.label ?? "Home"))];
   const reduced = useReducedMotion();
+  if (!selected || !chapter) return null;
   return (
     <div className="world-compass-bar">
       <Link to="/" className="compass-brand" aria-label="Cocoon home">
@@ -113,6 +116,7 @@ export function WorldMenu({
         <Dialog
           open={open}
           onOpenChange={(value) => {
+            previews.cancel();
             if (value) {
               setPreview(current?.label ?? null);
               setScene(sceneFor(current?.label ?? "Home"));
@@ -204,15 +208,19 @@ export function WorldMenu({
               items={NIGHT_CHAPTERS.map((c) => c.name)}
             />
             <nav aria-label="Explore Cocoon" className="world-menu-places">
-              {items.map((item, index) => (
+              {items.map((item) => (
                 <Link
                   to={item.to as "/"}
                   key={item.to}
                   viewTransition={false}
-                  onMouseEnter={() => previewPlace(item.label)}
+                  onPointerEnter={(event) => {
+                    if (event.pointerType !== "touch") previews.schedule(item.label);
+                  }}
+                  onPointerLeave={previews.cancel}
                   onFocus={() => previewPlace(item.label)}
                   data-preview={selected.label === item.label}
                   onClick={(event) => {
+                    previews.cancel();
                     enterWorld(event, {
                       to: item.to,
                       label: descriptions[item.label] ?? item.label,
@@ -223,7 +231,7 @@ export function WorldMenu({
                   aria-current={location.pathname === item.to ? "page" : undefined}
                 >
                   <item.icon size={26} />
-                  <span>
+                  <span className="atlas-link-content">
                     <strong>{item.label}</strong>
                     <small>{descriptions[item.label] ?? "Explore this place"}</small>
                   </span>

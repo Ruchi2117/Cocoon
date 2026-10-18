@@ -32,3 +32,4 @@
 - Signed-out Presence calls use the same Live relay with an empty token: server-only `reserve_guest_voice` uses hashed trusted-IP and global caps; missing IP or unavailable pause controls fail closed, so shared credits stay bounded without fingerprinting.
 - Components import `useReducedMotion` from `@/hooks/use-stable-reduced-motion` (false until hydrated), never directly from motion/react, so SSR and first client render match.
 - Safety news merges several fixed publisher RSS feeds (`FEEDS` in `safety-news.ts`, max 6 per region for the outbound cap); partial success is success, never request-supplied URLs.
+- Atlas pointer previews use cancellable dwell while keyboard selections are immediate; link hitboxes stay stationary and panorama exits serialize to prevent hover feedback loops and stacked landscapes.

@@ -1,5 +1,9 @@
 # Production voice and SOS
 
+## Atlas hover stability
+- [x] Keep hitboxes stationary; entrance transform and hover translate act on inner content separately. Cancellable 120ms pointer dwell, immediate focus, serialized panorama exits; four-per-side design unchanged.
+- [x] 16 focused tests and targeted lint pass; automatic build OK. Browser checks at 1280×1800 and 390×844 in normal/reduced motion confirm stationary edges, rapid hovering (one landscape maximum), keyboard focus, scene cancellation, close/reopen and Learn navigation; actual mobile touch taps also pass. No page errors. Separate typecheck unavailable because manual typechecks are prohibited. No publishing or unrelated feature changes.
+
 ## Submission-readiness audit (design frozen)
 - [x] Final readiness patch: exact Kit/Reports disclosures and hydration-gated RoomAtmosphere; 28 relevant tests pass, targeted lint passes with preserved line endings, automatic build OK. Browser confirms RoomAtmosphere mismatch gone and reduced preference applied; unrelated reduced-motion Reports warnings remain outside requested scope. Separate typecheck evidence unavailable. No calls, publishing or submission.
 - [x] Fail closed on guest pause lookup; correct IP-based and role-specific quota disclosures.
