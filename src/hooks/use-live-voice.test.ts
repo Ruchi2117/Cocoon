@@ -22,6 +22,7 @@ class MockChannel extends Emitter {
     this.readyState = "closed";
   });
 }
+let offerSdp = "";
 const peers: MockPeer[] = [];
 class MockPeer extends Emitter {
   connectionState = "new";
@@ -39,7 +40,7 @@ class MockPeer extends Emitter {
     return this.channel;
   }
   async createOffer() {
-    return { type: "offer", sdp: "v=0 offer" };
+    return { type: "offer", sdp: offerSdp };
   }
   async setLocalDescription(d: { sdp: string }) {
     this.localDescription = d;
@@ -86,6 +87,7 @@ const stream = () => ({ getTracks: () => [track], getAudioTracks: () => [track] 
 
 beforeEach(() => {
   peers.length = 0;
+  offerSdp = "v=0 offer\na=candidate:1 1 udp 1 203.0.113.9 50000 typ srflx";
   sockets.length = 0;
   track = { enabled: true, stop: vi.fn(), addEventListener: () => {} };
   getUserMedia = vi.fn(async () => stream());
@@ -135,10 +137,20 @@ async function connect(t: ReturnType<typeof mount>) {
 }
 
 describe("useLiveVoice lifecycle (mocked)", () => {
+  it("zero ICE routes (as seen in the sandbox browser smoke test) fails before any paid session", async () => {
+    offerSdp = "v=0 offer";
+    const t = mount();
+    act(() => t.hook.result.current.start(t.prepare));
+    await flush();
+    expect(t.hook.result.current.error).toMatch(/blocked voice connection setup/);
+    expect(t.prepare).not.toHaveBeenCalled();
+    expect(sockets).toHaveLength(0);
+    expect(track.stop).toHaveBeenCalled();
+  });
   it("sends token/context with the SDP once, applies the answer, then heartbeats and app.ready", async () => {
     const t = mount();
     const { s, p } = await connect(t);
-    expect(s.sent[0]).toMatchObject({ type: "app.start", sdp: "v=0 offer", token: "t" });
+    expect(s.sent[0]).toMatchObject({ type: "app.start", sdp: offerSdp, token: "t" });
     expect(p.remote).toEqual({ type: "answer", sdp: "ans" });
     expect(s.sent.map((m) => m["type"])).toEqual(["app.start", "gateway.heartbeat", "app.ready"]);
     expect(t.hook.result.current.status).toBe("connected");

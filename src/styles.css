@@ -7047,3 +7047,16 @@ body:has(.room-sos-dialog) [data-slot=dialog-overlay],body:has(.room-sos-dialog)
 .route-directions .text-muted-foreground, .cocoon-room .route-directions .text-muted-foreground { color: #5e4a54; }
 .route-directions button:hover { background: #e6dad4; }
 .route-directions .step-number { border-color: #b9a8a1; }
+
+/* Rights topics: explicit areas so names and context never share a column. */
+.rights-topics button { grid-template-columns: minmax(0,1fr) 18px; grid-template-areas: "name icon" "context icon"; row-gap: 4px; column-gap: 12px; }
+.rights-topics button strong { grid-area: name; min-width: 0; overflow-wrap: anywhere; line-height: 1.3; }
+.rights-topics button small { grid-area: context; grid-column: auto; min-width: 0; margin-top: 0; overflow-wrap: anywhere; line-height: 1.4; }
+.rights-topics button svg { grid-area: icon; grid-column: auto; grid-row: auto; align-self: center; }
+@media(max-width:767px) { .rights-topics button { grid-template-columns: minmax(0,1fr) 18px; } .rights-topics button small, .rights-topics button svg { grid-column: auto; } }
+@media(max-width:420px) { .rights-topics { grid-template-columns: 1fr; } }
+/* Sticky header gutter for Presence setup. */
+.call-prep, .call-prep-head h2 { scroll-margin-top: 130px; }
+/* Presence keeps two sticky layers (compass bar + support nav); reserve their height for anchor, focus and scrollIntoView targets. */
+html:has(.room-support-nav) { scroll-padding-top: 145px; }
+@media (max-width:700px) { html:has(.room-support-nav) { scroll-padding-top: 150px; } }

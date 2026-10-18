@@ -292,37 +292,36 @@ function createLiveVoice(options: LiveOptions) {
   }
 
   async function gatherCandidates(connection: RTCPeerConnection) {
-    if (connection.iceGatheringState === "complete") return;
+    // Non-trickle signaling: the offer must carry routes. A browser/network that yields no
+    // candidates can never connect, so fail here before any paid Gateway session is opened.
+    const routes = () => (connection.localDescription?.sdp.match(/^a=candidate:/gm) ?? []).length;
+    const publicRoute = () =>
+      /^a=candidate:.* typ (srflx|relay)/m.test(connection.localDescription?.sdp ?? "");
     await new Promise<void>((resolve, reject) => {
-      let found = 0;
-      // Full gathering can stall on some networks (VPNs, blocked STUN). Proceed once we
-      // have usable candidates for a moment; only fail when nothing was gathered at all.
+      // Full gathering can stall on some networks; once a public (STUN) route exists, proceed.
       const soft = setTimeout(() => {
-        if (found > 0) finish();
-      }, 2_500);
-      const timeout = setTimeout(() => {
-        // Even with no local candidates the remote side can still discover us through
-        // its own public candidates, so continue rather than blocking the call.
-        finish();
-      }, 4_000);
+        if (publicRoute()) finish();
+      }, 3_000);
+      const timeout = setTimeout(() => finish(), 10_000);
       function finish(error?: Error) {
         clearTimeout(timeout);
         clearTimeout(soft);
         connection.removeEventListener("icegatheringstatechange", changed);
-        connection.removeEventListener("icecandidate", candidate);
         cancelGathering = undefined;
-        if (error) reject(error);
-        else resolve();
-      }
-      function candidate(event: RTCPeerConnectionIceEvent) {
-        if (event.candidate) found += 1;
+        if (error) return reject(error);
+        if (routes() === 0)
+          return reject(
+            new Error(
+              "This browser or network blocked voice connection setup, so no call was started. Try another network or browser.",
+            ),
+          );
+        resolve();
       }
       function changed() {
         if (connection.iceGatheringState === "complete") finish();
       }
       cancelGathering = () => finish(new Error("Call ended"));
       connection.addEventListener("icegatheringstatechange", changed);
-      connection.addEventListener("icecandidate", candidate);
       changed();
     });
   }
