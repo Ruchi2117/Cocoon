@@ -104,6 +104,68 @@ describe("fetchSafetyNews multi-source", () => {
   };
   const feeds: FeedSource[] = [guardian, hindu];
 
+  it("shares concurrent outage work, cools down for 60s per region and recovers", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(now);
+    const f = vi.fn().mockRejectedValue(new Error("outage"));
+    vi.stubGlobal("fetch", f);
+    const { fetchSafetyNews } = await load();
+    const [a, b] = await Promise.all([
+      fetchSafetyNews("global", feeds),
+      fetchSafetyNews("global", feeds),
+    ]);
+    expect(a).toBe(b);
+    expect(a).toEqual({ items: [], fetchedAt: "", stale: false, unavailable: true });
+    expect(f).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(59_999);
+    expect(await fetchSafetyNews("global", feeds)).toEqual(a);
+    expect(f).toHaveBeenCalledTimes(2);
+    await fetchSafetyNews("india", feeds);
+    expect(f).toHaveBeenCalledTimes(4);
+    f.mockImplementation(async () => new Response(rss("")));
+    await vi.advanceTimersByTimeAsync(1);
+    const recovered = await fetchSafetyNews("global", feeds);
+    expect(recovered).toMatchObject({ items: [], unavailable: false, stale: false });
+    expect(recovered.fetchedAt).toBe(new Date(now + 60_000).toISOString());
+    expect(f).toHaveBeenCalledTimes(6);
+    expect((await fetchSafetyNews("india", feeds)).unavailable).toBe(true);
+    expect(f).toHaveBeenCalledTimes(6);
+    await vi.advanceTimersByTimeAsync(5 * 60_000);
+    expect((await fetchSafetyNews("global", feeds)).unavailable).toBe(false);
+    expect(f).toHaveBeenCalledTimes(8);
+  });
+
+  it("preserves last-good timestamp but expires it at 24h even during failure cooldown", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(now);
+    const f = vi.fn(
+      async () =>
+        new Response(
+          rss(item("Stalking case prompts campus review", "https://www.theguardian.com/s")),
+        ),
+    );
+    vi.stubGlobal("fetch", f);
+    const { fetchSafetyNews } = await load();
+    const good = await fetchSafetyNews("global", [guardian]);
+    f.mockRejectedValue(new Error("outage"));
+    vi.setSystemTime(now + 24 * 3600000 - 30_000);
+    const stale = await fetchSafetyNews("global", [guardian]);
+    expect(stale).toEqual({ ...good, stale: true, unavailable: true });
+    await vi.advanceTimersByTimeAsync(29_999);
+    expect(await fetchSafetyNews("global", [guardian])).toEqual(stale);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(await fetchSafetyNews("global", [guardian])).toEqual({
+      items: [],
+      fetchedAt: "",
+      stale: false,
+      unavailable: true,
+    });
+    expect(f).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(30_000);
+    await fetchSafetyNews("global", [guardian]);
+    expect(f).toHaveBeenCalledTimes(3);
+  });
+
   it("shows working feeds when another source fails, timestamped and attributed", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(now);

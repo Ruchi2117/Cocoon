@@ -1,5 +1,10 @@
 # Production voice and SOS
 
+## Targeted backend reliability
+- [x] Bound all live startup work with one 40s deadline; abort cancellation, release late slots exactly once, close late connectors and suppress late startup events.
+- [x] Cool down total RSS outages for 60s per region without extending last-good freshness; concurrency, recovery and exact 24h expiry verified with mock fetches.
+- [x] 49 targeted tests across 5 files and changed-file lint pass; latest automatic compilation reports build OK after correcting test types. UI/auth/RLS/provider locks untouched; no real calls or publishing.
+
 ## Atlas hover stability
 - [x] Keep hitboxes stationary; entrance transform and hover translate act on inner content separately. Cancellable 120ms pointer dwell, immediate focus, serialized panorama exits; four-per-side design unchanged.
 - [x] 16 focused tests and targeted lint pass; automatic build OK. Browser checks at 1280×1800 and 390×844 in normal/reduced motion confirm stationary edges, rapid hovering (one landscape maximum), keyboard focus, scene cancellation, close/reopen and Learn navigation; actual mobile touch taps also pass. No page errors. Separate typecheck unavailable because manual typechecks are prohibited. No publishing or unrelated feature changes.

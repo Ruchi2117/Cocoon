@@ -264,6 +264,14 @@ async function readFeed(source: FeedSource, timeoutMs: number): Promise<string> 
 
 const cache = new Map<NewsRegion, NewsResult>();
 const pending = new Map<NewsRegion, Promise<NewsResult>>();
+const failedUntil = new Map<NewsRegion, number>();
+const FAILURE_COOLDOWN_MS = 60_000;
+function unavailableResult(saved: NewsResult | undefined): NewsResult {
+  // Recheck age during cooldown: never extend last-good's original timestamp.
+  return saved && Date.now() - Date.parse(saved.fetchedAt) < 24 * 3600000
+    ? { ...saved, stale: true, unavailable: true }
+    : { items: [], fetchedAt: "", stale: false, unavailable: true };
+}
 export async function fetchSafetyNews(
   region: NewsRegion,
   feeds: FeedSource[] = FEEDS[region],
@@ -272,6 +280,7 @@ export async function fetchSafetyNews(
   if (saved && Date.now() - Date.parse(saved.fetchedAt) < 5 * 60000) return saved;
   const existing = pending.get(region);
   if (existing) return existing;
+  if (Date.now() < (failedUntil.get(region) ?? 0)) return unavailableResult(saved);
   const task = (async (): Promise<NewsResult> => {
     try {
       const settled = await Promise.allSettled(
@@ -289,11 +298,11 @@ export async function fetchSafetyNews(
         ],
       };
       cache.set(region, result);
+      failedUntil.delete(region);
       return result;
     } catch {
-      return saved && Date.now() - Date.parse(saved.fetchedAt) < 24 * 3600000
-        ? { ...saved, stale: true, unavailable: true }
-        : { items: [], fetchedAt: "", stale: false, unavailable: true };
+      failedUntil.set(region, Date.now() + FAILURE_COOLDOWN_MS);
+      return unavailableResult(saved);
     } finally {
       pending.delete(region);
     }

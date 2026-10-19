@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { bindLiveConnection, type LiveDeps, type LiveSocket } from "./live-relay.server";
+import {
+  bindLiveConnection,
+  type LiveConnector,
+  type LiveDeps,
+  type LiveSocket,
+} from "./live-relay.server";
 
 vi.mock("@/integrations/supabase/client.server", () => {
   throw new Error("Real database access forbidden in relay tests");
@@ -48,7 +53,7 @@ function setup(over: Partial<LiveDeps> = {}, clientKey?: string) {
   const browser = socket();
   const gateway = socket();
   const tasks: Promise<unknown>[] = [];
-  const connect = vi.fn(async () => gateway);
+  const connect = vi.fn<LiveConnector>(async () => gateway);
   const deps: LiveDeps = {
     authenticate: vi.fn(async (t: string) => (t === "good" ? { userId: "u1" } : null)),
     reserve: vi.fn(async () => ({ id: "slot-1" })),
@@ -71,6 +76,160 @@ function setup(over: Partial<LiveDeps> = {}, clientKey?: string) {
 }
 const types = (s: { sent: string[] }) => s.sent.map((d) => JSON.parse(d).type as string);
 afterEach(() => vi.useRealTimers());
+
+function deferred<T>() {
+  let resolve: (value: T) => void = () => {};
+  const promise = new Promise<T>((r) => {
+    resolve = r;
+  });
+  return { promise, resolve };
+}
+async function settleMicrotasks() {
+  for (let i = 0; i < 20; i++) await Promise.resolve();
+}
+
+describe("overall startup deadline (injected dependencies only)", () => {
+  it("times out pending guest hashing without starting a late reservation", async () => {
+    vi.useFakeTimers();
+    const hash = deferred<ArrayBuffer>();
+    const digest = vi.spyOn(crypto.subtle, "digest").mockReturnValue(hash.promise);
+    try {
+      const reserveGuest = vi.fn(async () => ({ id: "g1" }));
+      const t = setup({ reserveGuest, releaseGuest: vi.fn(async () => {}) }, "203.0.113.9");
+      t.browser.push({ type: "app.start", sdp: "v=0", token: "", context });
+      await vi.advanceTimersByTimeAsync(40_000);
+      expect(t.browser.state).toBe(3);
+      hash.resolve(new ArrayBuffer(32));
+      await t.flush();
+      expect(reserveGuest).not.toHaveBeenCalled();
+      expect(t.connect).not.toHaveBeenCalled();
+    } finally {
+      digest.mockRestore();
+    }
+  });
+
+  it("rejects late gateway startup events while draining after the deadline", async () => {
+    vi.useFakeTimers();
+    const t = setup();
+    t.browser.push({ type: "app.start", sdp: "v=0", token: "good", context });
+    await t.flush();
+    await vi.advanceTimersByTimeAsync(40_000);
+    expect(t.connect.mock.calls[0]?.[2]?.aborted).toBe(true);
+    expect(types(t.gateway)).toContain("session.close");
+    const count = t.browser.sent.length;
+    t.gateway.push({ type: "gateway.session.created", session: { id: "too-late" } });
+    expect(t.browser.sent).toHaveLength(count);
+    await vi.advanceTimersByTimeAsync(15_000);
+    await t.flush();
+    expect(t.deps.release).toHaveBeenCalledExactlyOnceWith("slot-1", "failed");
+    expect(t.browser.state).toBe(3);
+  });
+
+  it("times out hung authentication at 40s and never reserves after late authentication", async () => {
+    vi.useFakeTimers();
+    const auth = deferred<{ userId: string }>();
+    const t = setup({ authenticate: vi.fn(() => auth.promise) });
+    t.browser.push({ type: "app.start", sdp: "v=0", token: "good", context });
+    await vi.advanceTimersByTimeAsync(39_999);
+    expect(t.browser.state).toBe(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(t.browser.state).toBe(3);
+    expect(t.browser.sent.join()).toMatch(/Voice startup timed out/);
+    auth.resolve({ userId: "u1" });
+    await t.flush();
+    expect(t.deps.reserve).not.toHaveBeenCalled();
+    expect(t.connect).not.toHaveBeenCalled();
+  });
+
+  for (const guest of [false, true]) {
+    for (const cancelled of [false, true]) {
+      it(`releases a late ${guest ? "guest" : "account"} slot once after ${cancelled ? "cancellation" : "deadline"}`, async () => {
+        vi.useFakeTimers();
+        const slot = deferred<{ id: string }>();
+        const reserve = vi.fn(() => slot.promise);
+        const release = vi.fn(async () => {});
+        // Hashing is synthetic; no address or network leaves this test.
+        const digest = vi.spyOn(crypto.subtle, "digest").mockResolvedValue(new ArrayBuffer(32));
+        try {
+          const t = setup(
+            guest ? { reserveGuest: reserve, releaseGuest: release } : { reserve, release },
+            "203.0.113.9",
+          );
+          t.browser.push({ type: "app.start", sdp: "v=0", token: guest ? "" : "good", context });
+          await settleMicrotasks();
+          expect(reserve).toHaveBeenCalledTimes(1);
+          if (cancelled) t.browser.push({ type: "session.close" });
+          else await vi.advanceTimersByTimeAsync(40_000);
+          expect(t.browser.state).toBe(3);
+          slot.resolve({ id: "late-slot" });
+          await t.flush();
+          t.browser.push({ type: "session.close" });
+          await t.flush();
+          expect(release).toHaveBeenCalledExactlyOnceWith("late-slot", "failed");
+          expect(t.connect).not.toHaveBeenCalled();
+          if (guest) expect(t.deps.release).not.toHaveBeenCalled();
+        } finally {
+          digest.mockRestore();
+        }
+      });
+    }
+  }
+
+  it("does not reset the deadline after reservation and aborts/closes a delayed connector", async () => {
+    vi.useFakeTimers();
+    const slot = deferred<{ id: string }>();
+    const connector = deferred<LiveSocket>();
+    const t = setup({ reserve: vi.fn(() => slot.promise) });
+    t.connect.mockImplementationOnce(() => connector.promise as Promise<typeof t.gateway>);
+    t.browser.push({ type: "app.start", sdp: "v=0", token: "good", context });
+    await vi.advanceTimersByTimeAsync(30_000);
+    slot.resolve({ id: "slow-slot" });
+    await settleMicrotasks();
+    expect(t.connect).toHaveBeenCalledTimes(1);
+    const signal = t.connect.mock.calls[0]?.[2];
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(signal?.aborted).toBe(true);
+    expect(t.browser.state).toBe(3);
+    connector.resolve(t.gateway);
+    await t.flush();
+    expect(t.gateway.state).toBe(3);
+    expect(t.gateway.sent).toEqual([]);
+    expect(t.deps.release).toHaveBeenCalledExactlyOnceWith("slow-slot", "failed");
+  });
+
+  it("cancellation aborts a pending connector without sending a late session.start", async () => {
+    vi.useFakeTimers();
+    const connector = deferred<LiveSocket>();
+    const t = setup();
+    t.connect.mockImplementationOnce(() => connector.promise as Promise<typeof t.gateway>);
+    t.browser.push({ type: "app.start", sdp: "v=0", token: "good", context });
+    await settleMicrotasks();
+    t.browser.push({ type: "session.close" });
+    expect(t.connect.mock.calls[0]?.[2]?.aborted).toBe(true);
+    connector.resolve(t.gateway);
+    await t.flush();
+    expect(t.gateway.state).toBe(3);
+    expect(t.gateway.sent).toEqual([]);
+    expect(t.deps.release).toHaveBeenCalledExactlyOnceWith("slot-1", "failed");
+  });
+
+  it("clears the startup deadline only on successful gateway startup", async () => {
+    vi.useFakeTimers();
+    const t = setup();
+    t.browser.push({ type: "app.start", sdp: "v=0", token: "good", context });
+    await t.flush();
+    await vi.advanceTimersByTimeAsync(39_000);
+    t.gateway.push({ type: "gateway.session.created", session: { id: "s1" } });
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(t.browser.state).toBe(1);
+    expect(types(t.browser)).not.toContain("app.error");
+    expect(t.deps.release).not.toHaveBeenCalled();
+    t.browser.push({ type: "session.close" });
+    t.gateway.push({ type: "session.closed" });
+    await t.flush();
+    expect(t.deps.release).toHaveBeenCalledExactlyOnceWith("slot-1", "closed");
+  });
+});
 
 describe("live relay (mocked gateway, no real accounts or audio)", () => {
   it("refuses unauthenticated callers before reserving quota or contacting the gateway", async () => {

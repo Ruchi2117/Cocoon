@@ -292,6 +292,7 @@ export function bindLiveConnection(
   function stop() {
     if (closing) return;
     closing = true;
+    setupAbort.abort();
     for (const t of [startupTimer, startTimer, limitTimer]) clearTimeout(t);
     clearGreeting();
     if (gateway?.readyState === 1) {
@@ -314,6 +315,7 @@ export function bindLiveConnection(
       if (typeof data !== "string" || data.length > 1024 * 1024)
         throw new Error("Invalid voice event");
       const event: ProviderEvent = JSON.parse(data);
+      if (closing && event.type !== "session.closed") return;
       if (browser.readyState === 1) browser.send(data);
       if (event.type === "session.closed") return finish();
       if (
@@ -394,7 +396,9 @@ export function bindLiveConnection(
       // Only the server's trusted IP is hashed; no browser-supplied identity or fingerprint.
       guest = true;
       limitSeconds = Math.min(deps.guestLimitSeconds ?? 120, deps.limitSeconds);
-      slot = await deps.reserveGuest(await hashClient(clientKey));
+      const clientHash = await hashClient(clientKey);
+      if (closing || browser.readyState !== 1) return;
+      slot = await deps.reserveGuest(clientHash);
     } else {
       const user = token ? await deps.authenticate(token) : null;
       if (!user) throw new Error("Sign in with a verified account to start a live call.");
@@ -404,10 +408,6 @@ export function bindLiveConnection(
     if ("error" in slot) throw new Error(slot.error);
     reservation = slot.id;
     if (closing || browser.readyState !== 1) return releaseReservation();
-    startupTimer = setTimeout(() => {
-      emit({ type: "app.error", error: { message: "Voice startup timed out" } });
-      stop();
-    }, 40_000);
     const accepted = await connect(
       new URL(`${gatewayAPIBase(config.baseURL)}/live/sessions`).href,
       {
@@ -460,6 +460,11 @@ export function bindLiveConnection(
           throw new Error("Voice startup message required");
         starting = true;
         clearTimeout(startTimer);
+        // One deadline covers authentication, hashing, quota and gateway startup together.
+        startupTimer = setTimeout(() => {
+          emit({ type: "app.error", error: { message: "Voice startup timed out" } });
+          stop();
+        }, 40_000);
         execution.waitUntil(
           startSession(event["token"], event["context"], event["sdp"]).catch((error) => {
             if (!closing)
