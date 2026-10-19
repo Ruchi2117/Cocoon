@@ -1,4 +1,5 @@
 import { useEffect, useRef, type RefObject } from "react";
+import { createFrameCoalescer } from "@/lib/cocoon/frame-coalescer";
 
 export type CallCharacterState = "idle" | "ringing" | "listening" | "speaking" | "muted" | "ending";
 
@@ -66,19 +67,58 @@ export function CallCharacter({
     };
   }, [live, audioRef]);
 
-  // The scene leans very slightly toward the pointer on larger screens.
+  // The scene leans very slightly toward the pointer on larger screens. Pointer input is
+  // coalesced to one layout read/style write per frame, only while the character is on screen,
+  // the tab is visible and reduced motion is off.
   useEffect(() => {
     const el = root.current;
-    if (!el || !window.matchMedia("(pointer: fine)").matches) return;
-    const move = (e: PointerEvent) => {
-      const r = el.getBoundingClientRect();
-      const x = Math.max(-1, Math.min(1, (e.clientX - (r.left + r.width / 2)) / 500));
-      const y = Math.max(-1, Math.min(1, (e.clientY - (r.top + r.height / 2)) / 500));
-      el.style.setProperty("--look-x", x.toFixed(2));
-      el.style.setProperty("--look-y", y.toFixed(2));
+    if (!el || typeof window === "undefined" || !window.matchMedia) return;
+    const fine = window.matchMedia("(pointer: fine)");
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let onScreen = true;
+    let lastX = "",
+      lastY = "";
+    const write = (x: string, y: string) => {
+      if (x === lastX && y === lastY) return;
+      lastX = x;
+      lastY = y;
+      el.style.setProperty("--look-x", x);
+      el.style.setProperty("--look-y", y);
     };
+    const frame = createFrameCoalescer<{ x: number; y: number }>((p) => {
+      const r = el.getBoundingClientRect();
+      const x = Math.max(-1, Math.min(1, (p.x - (r.left + r.width / 2)) / 500));
+      const y = Math.max(-1, Math.min(1, (p.y - (r.top + r.height / 2)) / 500));
+      write(x.toFixed(2), y.toFixed(2));
+    });
+    const move = (e: PointerEvent) => {
+      if (!onScreen || reduce.matches || !fine.matches || document.visibilityState === "hidden")
+        return;
+      frame.schedule({ x: e.clientX, y: e.clientY });
+    };
+    const settle = () => {
+      if (reduce.matches) {
+        frame.cancel();
+        write("0.00", "0.00");
+      }
+    };
+    const io =
+      typeof IntersectionObserver === "undefined"
+        ? null
+        : new IntersectionObserver(([entry]) => {
+            onScreen = !!entry?.isIntersecting;
+            if (!onScreen) frame.cancel();
+          });
+    io?.observe(el);
+    settle();
+    reduce.addEventListener?.("change", settle);
     window.addEventListener("pointermove", move, { passive: true });
-    return () => window.removeEventListener("pointermove", move);
+    return () => {
+      window.removeEventListener("pointermove", move);
+      reduce.removeEventListener?.("change", settle);
+      io?.disconnect();
+      frame.cancel();
+    };
   }, []);
 
   return (
@@ -125,8 +165,20 @@ export function CallCharacter({
             <rect x="78" y="228" width="16" height="40" />
             <rect x="236" y="206" width="26" height="60" />
             <rect className="friend-window-lit" x="58" y="224" width="5" height="6" />
-            <rect className="friend-window-lit friend-window-b" x="244" y="218" width="5" height="6" />
-            <rect className="friend-window-lit friend-window-c" x="252" y="236" width="5" height="6" />
+            <rect
+              className="friend-window-lit friend-window-b"
+              x="244"
+              y="218"
+              width="5"
+              height="6"
+            />
+            <rect
+              className="friend-window-lit friend-window-c"
+              x="252"
+              y="236"
+              width="5"
+              height="6"
+            />
           </g>
           <rect className="friend-lampglow" width="320" height="380" fill="url(#friend-lamp)" />
           {/* lamp */}
@@ -165,8 +217,18 @@ export function CallCharacter({
             {/* hand + phone at her ear */}
             <g className="friend-phone">
               <rect x="186" y="200" width="14" height="30" rx="4" />
-              <rect className="friend-phone-screen" x="188.5" y="203" width="9" height="22" rx="2" />
-              <path className="friend-hand" d="M184 226c-2 18 6 40 18 58l20-6c-10-16-14-36-16-52z" />
+              <rect
+                className="friend-phone-screen"
+                x="188.5"
+                y="203"
+                width="9"
+                height="22"
+                rx="2"
+              />
+              <path
+                className="friend-hand"
+                d="M184 226c-2 18 6 40 18 58l20-6c-10-16-14-36-16-52z"
+              />
             </g>
           </g>
 

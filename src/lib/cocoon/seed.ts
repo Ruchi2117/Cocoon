@@ -57,9 +57,11 @@ export const DESTINATIONS = [
   { id: "d-gtb", label: "GTB Nagar Metro", at: [28.6976, 77.2069] as [number, number] },
 ];
 
-const iso = (minsAgo: number) => new Date(Date.now() - minsAgo * 60000).toISOString();
+/** Fixed clock for the shared server/hydration snapshot so SSR and first client render match. */
+export const SSR_SEED_EPOCH = Date.UTC(2026, 0, 15, 12, 0, 0);
 
-function seedReports(): SafetyReport[] {
+function seedReports(nowMs: number): SafetyReport[] {
+  const iso = (minsAgo: number) => new Date(nowMs - minsAgo * 60000).toISOString();
   return [
     {
       id: "r1",
@@ -175,11 +177,12 @@ function seedReports(): SafetyReport[] {
   ];
 }
 
-export function makeSeed(): DemoState {
+export function makeSeed(nowMs: number = Date.now()): DemoState {
+  const iso = (minsAgo: number) => new Date(nowMs - minsAgo * 60000).toISOString();
   return {
     version: 1,
     sosPreferences: {},
-    circle: makeCircleSeed(),
+    circle: makeCircleSeed(nowMs),
     role: "traveller",
     actorIds: {
       traveller: "u-ananya",
@@ -207,7 +210,7 @@ export function makeSeed(): DemoState {
         invitedAt: iso(60 * 4),
       },
     ],
-    reports: seedReports(),
+    reports: seedReports(nowMs),
     trips: [],
     notifications: [],
     incidents: [],

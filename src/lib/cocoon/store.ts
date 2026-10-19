@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { SSR_SEED_EPOCH } from "./seed";
 import { makeSeed, PROFILES } from "./seed";
 import type { DemoState, Role } from "./types";
 import { parseSavedDemo } from "./persistence";
@@ -126,7 +127,7 @@ function subscribe(l: () => void) {
 
 /** Returns the whole (referentially stable) state; derive with plain code / useMemo. */
 export function useDemoState(): DemoState {
-  return useSyncExternalStore(subscribe, getState, () => (serverSnap ??= makeSeed()));
+  return useSyncExternalStore(subscribe, getState, () => (serverSnap ??= makeSeed(SSR_SEED_EPOCH)));
 }
 
 export const uid = (p: string) =>

@@ -1,8 +1,18 @@
 import { useEffect, useId, useRef, useState } from "react";
 import { useHydrated } from "@tanstack/react-router";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { motion, useAnimationFrame, useInView, useMotionValue, useMotionValueEvent, useScroll, useSpring, useTransform } from "motion/react";
+import {
+  motion,
+  useAnimationFrame,
+  useInView,
+  useMotionValue,
+  useMotionValueEvent,
+  useScroll,
+  useSpring,
+  useTransform,
+} from "motion/react";
 import { useReducedMotion } from "@/hooks/use-stable-reduced-motion";
+import { createFrameCoalescer } from "@/lib/cocoon/frame-coalescer";
 import { Pause, Play } from "lucide-react";
 
 export function FlashlightThreshold({ opened }: { opened: boolean }) {
@@ -38,23 +48,32 @@ export function FlashlightThreshold({ opened }: { opened: boolean }) {
     pointer.current = false;
   });
   useEffect(() => {
-    const follow = (event: PointerEvent) => {
-      if (!active || opened || event.pointerType === "touch") return;
+    if (!active || opened) return;
+    // One window listener; the screen matrix is read at most once per frame for the latest point.
+    const frame = createFrameCoalescer<{ x: number; y: number }>((p) => {
       const matrix = svg.current?.getScreenCTM();
       if (!matrix) return;
       pointer.current = true;
-      const point = new DOMPoint(event.clientX, event.clientY).matrixTransform(matrix.inverse());
+      const point = new DOMPoint(p.x, p.y).matrixTransform(matrix.inverse());
       x.set(point.x);
       y.set(point.y);
+    });
+    const follow = (event: PointerEvent) => {
+      if (event.pointerType === "touch" || document.visibilityState === "hidden") return;
+      frame.schedule({ x: event.clientX, y: event.clientY });
     };
     const release = () => {
+      frame.cancel();
       pointer.current = false;
     };
-    window.addEventListener("pointermove", follow);
+    window.addEventListener("pointermove", follow, { passive: true });
     window.addEventListener("blur", release);
+    document.documentElement.addEventListener("pointerleave", release);
     return () => {
       window.removeEventListener("pointermove", follow);
       window.removeEventListener("blur", release);
+      document.documentElement.removeEventListener("pointerleave", release);
+      frame.cancel();
     };
   }, [active, opened, x, y]);
   useAnimationFrame((t) => {
@@ -70,18 +89,6 @@ export function FlashlightThreshold({ opened }: { opened: boolean }) {
           viewBox={mobile ? "0 0 850 1000" : "0 0 1600 1000"}
           preserveAspectRatio="xMidYMid slice"
           aria-hidden="true"
-          onPointerMove={(e) => {
-            if (!active || opened || e.pointerType === "touch") return;
-            const matrix = svg.current?.getScreenCTM();
-            if (!matrix) return;
-            pointer.current = true;
-            const point = new DOMPoint(e.clientX, e.clientY).matrixTransform(matrix.inverse());
-            x.set(point.x);
-            y.set(point.y);
-          }}
-          onPointerLeave={() => {
-            pointer.current = false;
-          }}
         >
           <defs>
             <linearGradient id={`${id}-sky`} x2="0" y2="1">

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { LocalDate } from "./LocalDate";
 import { ScrollWords } from "./ScrollWords";
 import { AnimatePresence, motion } from "motion/react";
 import { useReducedMotion } from "@/hooks/use-stable-reduced-motion";
@@ -53,7 +54,7 @@ export function NewsFlipbook({ items }: { items: SafetyHeadline[] }) {
           transition={{ duration: reduced ? 0 : 0.4 }}
         >
           <span className="eyebrow">
-            {article.publisher} · {new Date(article.publishedAt).toLocaleDateString()}
+            {article.publisher} · <LocalDate iso={article.publishedAt} options={{}} />
           </span>
           {back ? (
             <>

@@ -22,6 +22,7 @@ import {
 import { toast } from "sonner";
 import { inkSplash } from "@/lib/cocoon/splash";
 import { CircleAvatar } from "@/components/cocoon/CircleAvatar";
+import { LocalDate } from "@/components/cocoon/LocalDate";
 import { GirlFigure } from "@/components/cocoon/GirlFigure";
 import { useDemoState } from "@/lib/cocoon/store";
 import {
@@ -169,7 +170,9 @@ function CirclePage() {
               onClick={() => {
                 setView("circle");
                 setAuthor(author === id ? null : id);
-                document.getElementById("circle-conversations")?.scrollIntoView({ behavior: reduced ? "instant" : "smooth" });
+                document
+                  .getElementById("circle-conversations")
+                  ?.scrollIntoView({ behavior: reduced ? "instant" : "smooth" });
               }}
             >
               <span className="circle-story-ring">
@@ -204,7 +207,9 @@ function CirclePage() {
       {topic !== "all" && topic in ROOMS && (
         <RoomBanner
           topic={topic as keyof typeof ROOMS}
-          authors={Array.from(new Set(visiblePosts.filter((p) => p.topic === topic).map((p) => p.authorId)))}
+          authors={Array.from(
+            new Set(visiblePosts.filter((p) => p.topic === topic).map((p) => p.authorId)),
+          )}
           count={visiblePosts.filter((p) => p.topic === topic).length}
           onClose={() => setTopic("all")}
         />
@@ -656,12 +661,7 @@ function Conversation({
         </span>
         <span>{CIRCLE_TOPICS[post.topic]}</span>
         <span>{post.demo ? "Fictional example" : "Local demo contribution"}</span>
-        <time dateTime={post.createdAt}>
-          {new Date(post.createdAt).toLocaleDateString(undefined, {
-            month: "short",
-            day: "numeric",
-          })}
-        </time>
+        <LocalDate iso={post.createdAt} />
       </div>
       <h3>{post.title}</h3>
       <span className="circle-need">{CIRCLE_NEEDS[post.need]}</span>
@@ -863,7 +863,12 @@ function Reactions() {
   return (
     <div className="circle-reactions" role="group" aria-label="React (only on your screen)">
       {REACTIONS.map(([k, Icon, label]) => (
-        <button key={k} type="button" aria-pressed={on === k} onClick={() => setOn(on === k ? null : k)}>
+        <button
+          key={k}
+          type="button"
+          aria-pressed={on === k}
+          onClick={() => setOn(on === k ? null : k)}
+        >
           <Icon size={15} aria-hidden="true" fill={on === k ? "currentColor" : "none"} /> {label}
         </button>
       ))}
@@ -876,21 +881,33 @@ const ROOMS = {
     tag: "Periods & body",
     line: "Cramps, cycles, tiredness and the awkward bits — talked about plainly.",
     tip: "Share what helps you, not what someone else should take. Medical questions belong with a doctor.",
-    prompts: ["How do you ask for a break?", "Your comfort kit for long days", "Explaining it to a teacher or boss"],
+    prompts: [
+      "How do you ask for a break?",
+      "Your comfort kit for long days",
+      "Explaining it to a teacher or boss",
+    ],
     motif: "body",
   },
   boundaries: {
     tag: "Boundaries & relationships",
     line: "Saying no, noticing pressure, and keeping the people who respect you.",
     tip: "A boundary doesn’t need a long explanation. Replies here suggest, they don’t instruct.",
-    prompts: ["Short ways to say no", "When a friend crosses a line", "Pressure online vs in person"],
+    prompts: [
+      "Short ways to say no",
+      "When a friend crosses a line",
+      "Pressure online vs in person",
+    ],
     motif: "boundaries",
   },
   campus: {
     tag: "Travel & campus life",
     line: "Late labs, new cities, first solo trips and getting home settled.",
     tip: "Keep places general. Never post someone’s exact address, hostel room or live location here.",
-    prompts: ["Your late-walk habits", "Ride sharing without awkwardness", "First week in a new city"],
+    prompts: [
+      "Your late-walk habits",
+      "Ride sharing without awkwardness",
+      "First week in a new city",
+    ],
     motif: "campus",
   },
   feelings: {
@@ -909,7 +926,8 @@ function RoomMotif({ kind }: { kind: string }) {
         <g>
           <circle cx="100" cy="70" r="46" className="rm-a" />
           <path d="M100 38c14 18 22 30 22 42a22 22 0 0 1-44 0c0-12 8-24 22-42z" className="rm-b" />
-          <circle cx="60" cy="30" r="6" className="rm-c" /><circle cx="150" cy="110" r="8" className="rm-c" />
+          <circle cx="60" cy="30" r="6" className="rm-c" />
+          <circle cx="150" cy="110" r="8" className="rm-c" />
         </g>
       )}
       {kind === "boundaries" && (
@@ -929,15 +947,29 @@ function RoomMotif({ kind }: { kind: string }) {
       )}
       {kind === "feelings" && (
         <g>
-          <path d="M100 116C56 88 40 62 56 44c12-13 32-10 44 8 12-18 32-21 44-8 16 18 0 44-44 72z" className="rm-b" />
-          <circle cx="44" cy="100" r="7" className="rm-c" /><circle cx="160" cy="28" r="10" className="rm-a" />
+          <path
+            d="M100 116C56 88 40 62 56 44c12-13 32-10 44 8 12-18 32-21 44-8 16 18 0 44-44 72z"
+            className="rm-b"
+          />
+          <circle cx="44" cy="100" r="7" className="rm-c" />
+          <circle cx="160" cy="28" r="10" className="rm-a" />
         </g>
       )}
     </svg>
   );
 }
 
-function RoomBanner({ topic, authors, count, onClose }: { topic: keyof typeof ROOMS; authors: string[]; count: number; onClose: () => void }) {
+function RoomBanner({
+  topic,
+  authors,
+  count,
+  onClose,
+}: {
+  topic: keyof typeof ROOMS;
+  authors: string[];
+  count: number;
+  onClose: () => void;
+}) {
   const r = ROOMS[topic];
   return (
     <section className="room-banner" data-room={topic} aria-label={`${r.tag} room`} key={topic}>
@@ -956,14 +988,21 @@ function RoomBanner({ topic, authors, count, onClose }: { topic: keyof typeof RO
             {count} {count === 1 ? "conversation" : "conversations"} · fictional members
           </small>
         </div>
-        <p className="room-banner-tip"><strong>Room note:</strong> {r.tip}</p>
+        <p className="room-banner-tip">
+          <strong>Room note:</strong> {r.tip}
+        </p>
         <div className="room-banner-prompts">
           {r.prompts.map((t) => (
             <span key={t}>{t}</span>
           ))}
         </div>
       </div>
-      <button type="button" className="room-banner-close" onClick={onClose} aria-label="Back to all rooms">
+      <button
+        type="button"
+        className="room-banner-close"
+        onClick={onClose}
+        aria-label="Back to all rooms"
+      >
         ✕
       </button>
     </section>

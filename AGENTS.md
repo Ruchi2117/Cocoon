@@ -18,7 +18,6 @@
 - Optional welcome/referral concept state is separate (`cocoon-referral-demo-v1`, `referral-demo.ts`). These are capped sample joins and non-spendable demo credits, never real user counts or rewards. `/welcome` must remain skippable and must not imply authentication.
 - Root entry completion uses the session-scoped `entry.ts` external-store hook shared by Home and AppShell; this keeps hydration consistent, hides entry navigation and leaves direct page URLs ungated.
 - Entry completion and custom doorway links disable native view transitions to avoid duplicate DOM-update waits; doorway navigation and dismissal have cancellable timer fallbacks so interrupted animations cannot trap navigation.
-- RoomAtmosphere gates reduced-motion branching with useHydrated so SSR and initial client rendering agree before applying the user's preference.
 - Emergency access requests one-time geolocation only on explicit user action. Cancel/close must ignore late results; coordinates stay in memory until the panel closes. Native dialler/share handoffs are not delivery or dispatch confirmation. See `docs/ENTRY-AND-EMERGENCY.md`.
 
 - User prefs (user-confirmed country, units) live in `src/lib/cocoon/locale.ts` (`cocoon-prefs-v1`); country only selects the authority directory, never inferred — keeps emergency info scoped.
@@ -30,8 +29,8 @@
 - Presence primary call uses the Lovable AI Gateway Live relay (`src/lib/live/`, `/api/live` in `src/server.ts` + `live-vite-plugin.ts` for dev) with injected auth/quota deps; it needs no external provider account, and direct OpenAI voice stays policy-disabled. The scripted browser demo (`docs/PRESENCE-ROOM.md`) stays collapsed and labelled, never a fallback. See `docs/LIVE-VOICE.md`.
 - Subdirectories may have their own `AGENTS.md` (e.g. `src/lib/production/`); read it before changing files there.
 - Signed-out Presence calls use the same Live relay with an empty token: server-only `reserve_guest_voice` uses hashed trusted-IP and global caps; missing IP or unavailable pause controls fail closed, so shared credits stay bounded without fingerprinting.
-- Components import `useReducedMotion` from `@/hooks/use-stable-reduced-motion` (false until hydrated), never directly from motion/react, so SSR and first client render match.
-- Safety news merges several fixed publisher RSS feeds (`FEEDS` in `safety-news.ts`, max 6 per region for the outbound cap); partial success is success, never request-supplied URLs.
+- Reduced-motion branching (components import `useReducedMotion` from `@/hooks/use-stable-reduced-motion`, never motion/react; RoomAtmosphere included) waits for hydration so SSR and first client render match.
+- Safety news merges fixed publisher RSS feeds (`FEEDS` in `safety-news.ts`, max 6/region), never request-supplied URLs; partial success is success; failures cool down per region in memory without extending last-good freshness.
 - Live startup has one auth/quota/gateway deadline; abort and clean late slots/connectors to prevent leaks.
-- RSS failures cool down per region in memory; recheck last-good age to prevent freshness extension.
 - Atlas pointer previews use cancellable dwell while keyboard selections are immediate; link hitboxes stay stationary and panorama exits serialize to prevent hover feedback loops and stacked landscapes.
+- Demo store SSR snapshot uses fixed `SSR_SEED_EPOCH`; dates render via `LocalDate` (UTC until hydrated) so clocks/locales cannot cause hydration mismatches; no suppressHydrationWarning.
